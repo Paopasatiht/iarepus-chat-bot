@@ -26,8 +26,9 @@
     },
     {
       "tag": "thanks",
-      "patterns": ["Thanks", "Thank you", "That's helpful", "Thank's a lot!"],
-      "responses": ["Happy to help!", "Any time!", "My pleasure"]
+      "patterns": ["Thanks", "Thank you", "That's helpful", "Thank's a lot!", "thx", "THX",
+                    "ขอบคุณครับ", "ขอบคุณ", "ขอบคุณมาก", "ขอบคุณค่ะ"],
+      "responses": ["Super AI Chatbot ยินดีที่เป็นประโยชน์ครับ"]
     },
     {
       "tag": "items",

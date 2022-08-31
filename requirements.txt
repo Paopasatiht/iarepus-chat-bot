@@ -1,0 +1,6 @@
+Flask
+torch
+torchvision
+nltk
+pythainlp
+Flask-Cors==3.0.10
