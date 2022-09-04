@@ -12,7 +12,7 @@ class DialogueManager():
         """
         
         self.model = word_vector.get_model()
-        self.dataset = pd.read_csv("/home/few-buntu/Projects/iarepus-chat-bot/data_corpus.csv")
+        self.dataset = pd.read_csv("../iarepus-chat-bot/data_corpus.csv")
         
         self.QUESTION_VECTORS = self.dataset.Question_vector
         self.COSINE_THRESHOLD = 0.5
