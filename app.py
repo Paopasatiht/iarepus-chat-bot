@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-from chat import get_response
+from chat import _get_response
+from utils.dialogue_manager import DialogueManager
 
 app = Flask(__name__)
 CORS(app)
@@ -11,12 +12,12 @@ def index_get():
     return render_template("base.html")
 
 
-
 @app.post("/predict")
 def predict():
     text = request.get_json().get("message")
     # TODO Check if the text is valid
-    response = get_response(text)
+    msg_manager = DialogueManager()
+    response = _get_response(text, msg_manager)
     message =  {"answer" : response}
     return jsonify(message)
 
