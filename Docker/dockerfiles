@@ -1,0 +1,15 @@
+FROM python:3.8
+
+WORKDIR /Projects
+
+COPY . .
+
+#update pip first
+
+RUN apt-get update && apt-get -y upgrade
+RUN pip3 install --upgrade pip
+
+#install dependencies
+RUN pip install -r requirements.txt
+
+# CMD ["python", ""]

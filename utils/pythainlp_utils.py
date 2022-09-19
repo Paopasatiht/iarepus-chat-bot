@@ -2,7 +2,9 @@ from pythainlp import sent_tokenize, word_tokenize
 from pythainlp import word_tokenize 
 from pythainlp import word_vector
 from sklearn.metrics.pairwise import cosine_similarity  
+from pythainlp.word_vector import WordVector
 import numpy as np
+
 
 def thai_tokenize(sentence):
     return word_tokenize(
@@ -46,14 +48,11 @@ def sentence_vectorizer(ss, model, dim=300,use_mean=True):
     if use_mean: vec /= len(s)
     return vec
 
-def sentence_similarity(s1,s2,model):
+def sentence_similarity(s1,s2,model=None):
     """ Measure the simirality from "two sentence"
     """
     return cosine_similarity(sentence_vectorizer(str(s1), model),sentence_vectorizer(str(s2), model))
 
-if __name__ == "__main__" :
-    text = "สวัสดีครับผมชื่อฟิว"
-    model = word_vector.get_model()
-    vec = sentence_vectorizer(text, model)
+def _word_tkn(s1 : str):
 
-    print(vec)
+    return word_tokenize(s1)
