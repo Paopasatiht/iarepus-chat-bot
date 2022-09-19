@@ -10,14 +10,14 @@ from utils.helper import _float_converter
 class DialogueManager():
 
     def __init__(self, model):
-        """ dataset cols -> [Intents,Question, Answer,Question_vector]
+        """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         self.model = model
-        self.dataset = pd.read_csv("../Projects/data_corpus.csv")
-        print("Load model please wait . . .")
+        self.dataset = pd.read_csv("../Projects/data_corpus_v2.csv")
         
-        self.QUESTION = self.dataset.Question
-        self.QUESTION_VECTORS = self.dataset.Question_vector
+        self.QUESTION = self.dataset.Keys
+        self.QUESTION_VECTORS = self.dataset.Keys_vector
+        self.ANSWER = self.dataset.Values
         self.COSINE_THRESHOLD = 0.5
 
     def embedded(self, sentence, dim = 300, use_mean = True):
@@ -40,7 +40,7 @@ class DialogueManager():
         return vec
 
     def sent_embeddings(self, sentenced : list):
-        """ embedding the sentenced base on the pre trained weights
+        """ embedding the sentenced base on the pre trained weights, bert embeddings
         Parameters
             Input : 
                 sentenced : string
@@ -52,43 +52,76 @@ class DialogueManager():
 
         return self.model.encode([sentenced])
 
-    def semantic_search(self, query_text):
-        """ Return max_cos_ind and cosine_similarity value
+    def semantic_search(self, query_text, multiple_answer = True):
+        """ Search the matching question from the corpus, grasp the "keys" from the probability that passing criterion.
+        "one intents" can answer only "one answer"
         """
-
-        # query_vec = self.embedded(query_text)
-        query_vec = self.sent_embeddings(query_text)
-        similar_lab = []
         
-        for answer_vec in self.QUESTION_VECTORS:
+        query_vec = self.sent_embeddings(query_text)
+        sim_score = []
+        most_relavance_dict= {}
+        
+        #TODO : Find the proper searching algorithms
 
-            answer_vec = _float_converter(answer_vec)
-            # a_vec = self.embedded(answer_vec)
-            sim = cosine_similarity(query_vec, answer_vec)
-            similar_lab.append(sim)
+        # for answer_vec in self.QUESTION_VECTORS:
+            
+        #     answer_vec = _float_converter(answer_vec)
+        #     sim = cosine_similarity(query_vec, answer_vec)
+        #     similar_score.append(sim)
+        
+        # if multiple_answer:
+        #     p_index = [similar_score.index(val) for val in similar_score if val > self.COSINE_THRESHOLD]
+        #     most_relavance_score = [similar_score[p] for p in p_index]
 
-        max_ind = similar_lab.index(max(similar_lab))
-        most_relavance_score = similar_lab[max_ind]
+        _intent_ls = list(set(self.dataset.Intents.tolist()))
+        
+        for idx in range(len(_intent_ls)):
+            answer_keys = self.dataset.loc[self.dataset.Intents == _intent_ls[idx]].Keys_vector.tolist() # Generate a list of key vector
+            for answer_key in answer_keys:
+                answer_vec = _float_converter(answer_key)
+                sim = cosine_similarity(query_vec, answer_vec)
+                #TODO : Add active learning loop at this point(optional)
+                if sim > self.COSINE_THRESHOLD:
+                    most_relavance_dict.update({_intent_ls[idx] : self.dataset.loc[self.dataset.Intents == _intent_ls[idx]].Values.tolist()[0]})
+                    sim_score.append(sim)
+                    break
+                else:
+                    pass
 
-        return max_ind, most_relavance_score
+
+        return most_relavance_dict, sim_score
 
     def generate_answer(self, question):
         """ Query the matching "question" and return "answer"
         """
-        ind, most_relavance_score = self.semantic_search(question)
-        print("Probability : {}".format(most_relavance_score))
+        answer_dict, sim_score = self.semantic_search(question)
 
-        if most_relavance_score > self.COSINE_THRESHOLD:
-            answer = self.dataset.Answer[ind]
+        if len(answer_dict) != 0:
+            answer = ''
+            for idx, values in enumerate(answer_dict.values()): 
+                                
+                print("Probability : {}".format(sim_score[idx]))
+                answer += "* " + values + "\n"
+                
         else:
             answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superaiengineer2021.tawk.help/"
-            
-            # If bot does not know sentence keep in the text:
+                                
             _f = open("logs/uncertainly_q.txt", "a")
             _f.write(question + "\n")
             _f.close()
 
         return answer
+
+if __name__ == "__main__" :
+
+    # For debug :
+    q_vec = "โครงการที่จัดเป็นแบบไหน"
+    model =  SentenceTransformer('mrp/simcse-model-roberta-base-thai')
+    msg_manager = DialogueManager(model)
+
+    resp = msg_manager.generate_answer(q_vec)
+    print(resp)
+
 
 
 

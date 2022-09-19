@@ -23,7 +23,6 @@ def _get_response(msg: str, msg_manager):
 
 if __name__ == "__main__":
     print("Let's chat! (type 'quit' to exit)")
-    df = pd.read_csv("../Projects/data_corpus.csv")
     msg_manager = DialogueManager(model)
 
     while True:
@@ -34,6 +33,6 @@ if __name__ == "__main__":
 
             resp = _get_response(sentence,msg_manager)
             print(resp)
-        except:
+        except Exception as e:
             print("Error!, Do not use backspace at the end of line")
-
+            
