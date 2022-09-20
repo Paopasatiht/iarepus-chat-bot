@@ -8,10 +8,14 @@ from models.model import NeuralNet
 from utils.nltk_utils import bag_of_words, tokenize
 from utils.dialogue_manager import DialogueManager
 from sentence_transformers import SentenceTransformer
+from utils.yamlparser import YamlParser
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model =  SentenceTransformer('mrp/simcse-model-roberta-base-thai')
+config_file = "/Projects/configs/config.yaml"
+cfg = YamlParser(config_file)
+
+model = SentenceTransformer(cfg["MODEL"]["answer_model"])
 
 
 def _get_response(msg: str, msg_manager):

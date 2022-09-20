@@ -23,12 +23,12 @@ def generate_q_vector(df : pd.DataFrame):
     """
     pbar = tqdm(total=len(df))
     q_vector = []
-    for q in df.Question:
+    for q in df.Keys:
         res = sentence_embedded(q)
         q_vector.append(res)
         pbar.update(1)
 
-    df["Question_vector"] = q_vector
+    df["Keys_vector"] = q_vector
     pbar.close()
     save_csv(df)
     print("Successfully generate Question vector !")
@@ -36,10 +36,10 @@ def generate_q_vector(df : pd.DataFrame):
 def save_csv(df: pd.DataFrame):
     """ Save new csv 
     """
-    print(type(df["Question_vector"][0]))
-    df.to_csv("../Projects/data_corpus.csv", float_format='%g')
+    print(type(df["Keys_vector"][0]))
+    df.to_csv("../Projects/configs/data_corpus_v2.csv", float_format='%g')
 
 if __name__ == "__main__":
 
-    dataframe = pd.read_csv("../Projects/data_corpus.csv")
+    dataframe = pd.read_csv("../Projects/data_corpus_v2.csv")
     generate_q_vector(dataframe)

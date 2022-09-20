@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from pythainlp import word_vector
 from pythainlp import word_tokenize
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -13,7 +12,7 @@ class DialogueManager():
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         self.model = model
-        self.dataset = pd.read_csv("../Projects/data_corpus_v2.csv")
+        self.dataset = pd.read_csv("../Projects/configs/data_corpus_v2.csv")
         
         self.QUESTION = self.dataset.Keys
         self.QUESTION_VECTORS = self.dataset.Keys_vector
@@ -61,18 +60,6 @@ class DialogueManager():
         sim_score = []
         most_relavance_dict= {}
         
-        #TODO : Find the proper searching algorithms
-
-        # for answer_vec in self.QUESTION_VECTORS:
-            
-        #     answer_vec = _float_converter(answer_vec)
-        #     sim = cosine_similarity(query_vec, answer_vec)
-        #     similar_score.append(sim)
-        
-        # if multiple_answer:
-        #     p_index = [similar_score.index(val) for val in similar_score if val > self.COSINE_THRESHOLD]
-        #     most_relavance_score = [similar_score[p] for p in p_index]
-
         _intent_ls = list(set(self.dataset.Intents.tolist()))
         
         for idx in range(len(_intent_ls)):
@@ -115,8 +102,8 @@ class DialogueManager():
 if __name__ == "__main__" :
 
     # For debug :
-    q_vec = "โครงการที่จัดเป็นแบบไหน"
-    model =  SentenceTransformer('mrp/simcse-model-roberta-base-thai')
+    q_vec = "ต้องเสียค่าใช้จ่ายในการสมัครมั้ยครับ"
+    model =  SentenceTransformer('checkpoints/simcse-model-thai-version-supAIkeyword')
     msg_manager = DialogueManager(model)
 
     resp = msg_manager.generate_answer(q_vec)

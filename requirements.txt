@@ -9,6 +9,7 @@ sentence-transformers
 # Require dependencies
 pandas
 gensim
+easydict
 
 # Deploy on web application
 flask
