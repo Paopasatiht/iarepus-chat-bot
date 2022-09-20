@@ -1,25 +1,37 @@
+import torch
 import numpy as np
 import pandas as pd
+
 from pythainlp import word_tokenize
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from pythainlp_utils import thai_bag_of_words
 
 from utils.helper import _float_converter
+from utils.nltk_utils import bag_of_words
 
 class DialogueManager():
 
-    def __init__(self, model):
+    def __init__(self, answer_model, intent_model,input_size, hidden_size, output_size, all_words, tags):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
-        self.model = model
+        # Model && corpus initiate
+        self.model = answer_model
+        self.intent_tagging = intent_model
         self.dataset = pd.read_csv("../Projects/configs/data_corpus_v2.csv")
-        
+        # Corpus parameter declarations
         self.QUESTION = self.dataset.Keys
         self.QUESTION_VECTORS = self.dataset.Keys_vector
         self.ANSWER = self.dataset.Values
         self.COSINE_THRESHOLD = 0.5
+        # Model parameters declaration
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+        self.all_words = all_words
+        self.tags = tags
 
-    def embedded(self, sentence, dim = 300, use_mean = True):
+    def word_embedded(self, sentence, dim = 300, use_mean = True):
         """ Receive a "sentence" and encode to vector in dimension 300
             Step : 
             1.) Word tokenize from "sentence"
@@ -51,22 +63,51 @@ class DialogueManager():
 
         return self.model.encode([sentenced])
 
-    def semantic_search(self, query_text, multiple_answer = True):
+    def tagging(self, sentenced : list):
+        """ Receive a user input and predict the tags 
+        Parameters
+            Input :
+                sentenced : string
+                          : string that was receive from user
+            Output :
+                tag : string
+                    : Refer to which class a query vector is, Reference from tag in configs/intents.json
+        """
+
+        sentence = self.word_embedded(sentenced[0])
+        X = bag_of_words(sentence, self.all_words)
+        X = X.reshape(1, X.shape[0])
+        X = torch.from_numpy()
+
+        output = self.intent_tagging(X)
+        _, predicted = torch.max(output, dim=1)
+        tag = self.tags[predicted.item()]
+
+        return tag
+
+    def semantic_search(self, query_text):
         """ Search the matching question from the corpus, grasp the "keys" from the probability that passing criterion.
         "one intents" can answer only "one answer"
         """
         
         query_vec = self.sent_embeddings(query_text)
+        
         sim_score = []
         most_relavance_dict= {}
         
         _intent_ls = list(set(self.dataset.Intents.tolist()))
         
+        # Step to generate a answer dictionary
+        # 1.) Generate a key from "intent" columns
+        # 2.) Pick the "Key_vetor" from each "intent" and measure the similarity
+        # 3.) If score > threshold, pick a values from "Values" columns and update dictionary as "intent" : "Values"
+        # 4.) Redo with another intent
         for idx in range(len(_intent_ls)):
-            answer_keys = self.dataset.loc[self.dataset.Intents == _intent_ls[idx]].Keys_vector.tolist() # Generate a list of key vector
+            answer_keys = self.dataset.loc[self.dataset.Intents == _intent_ls[idx]].Keys_vector.tolist() 
             for answer_key in answer_keys:
                 answer_vec = _float_converter(answer_key)
                 sim = cosine_similarity(query_vec, answer_vec)
+
                 #TODO : Add active learning loop at this point(optional)
                 if sim > self.COSINE_THRESHOLD:
                     most_relavance_dict.update({_intent_ls[idx] : self.dataset.loc[self.dataset.Intents == _intent_ls[idx]].Values.tolist()[0]})
