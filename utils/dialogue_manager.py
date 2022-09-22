@@ -50,7 +50,7 @@ class DialogueManager():
         
         return vec
 
-    def sent_embeddings(self, sentenced : list):
+    def sent_embeddings(self, sentenced : str):
         """ embedding the sentenced base on the pre trained weights, bert embeddings
         Parameters
             Input : 
@@ -63,7 +63,7 @@ class DialogueManager():
 
         return self.model.encode([sentenced])
 
-    def tagging(self, sentenced : list):
+    def tagging(self, sentenced : str):
         """ Receive a user input and predict the tags 
         Parameters
             Input :
@@ -75,7 +75,7 @@ class DialogueManager():
         """
 
         sentence = self.word_embedded(sentenced[0])
-        X = bag_of_words(sentence, self.all_words)
+        X = thai_bag_of_words(sentence, self.all_words)
         X = X.reshape(1, X.shape[0])
         X = torch.from_numpy()
 
