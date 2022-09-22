@@ -3,11 +3,15 @@ from flask_cors import CORS
 from chat import _get_response
 from utils.dialogue_manager import DialogueManager
 from sentence_transformers import SentenceTransformer
+from utils.yamlparser import YamlParser
 
 # Declare a Flask app :
 app = Flask(__name__)
 CORS(app)
-model =  SentenceTransformer('mrp/simcse-model-roberta-base-thai')
+config_file = "/Projects/configs/config.yaml"
+cfg = YamlParser(config_file)
+
+model = SentenceTransformer(cfg["MODEL"]["answer_model"])
 
 # Main function here :
 @app.get("/")

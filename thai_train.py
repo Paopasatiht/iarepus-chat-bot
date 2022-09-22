@@ -6,9 +6,9 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
 from utils.pythainlp_utils import thai_bag_of_words, thai_tokenize
-from model.model import NeuralNet
+from models.model import NeuralNet
 
-with open('./intents.json', 'r',encoding="utf8") as f:
+with open('./configs/intents.json', 'r',encoding="utf8") as f:
     intents = json.load(f)
 
 all_words = []
@@ -123,7 +123,7 @@ data = {
     "tags": tags
 }
 
-FILE = "data.pth"
+FILE = "/Projects/checkpoints/intent-model-thai/intents_classification.pth"
 torch.save(data, FILE)
 
 print(f'training complete. file saved to {FILE}')
