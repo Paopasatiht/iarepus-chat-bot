@@ -46,7 +46,7 @@ def _get_response(msg: str, msg_manager):
 
 if __name__ == "__main__":
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags)
+    msg_manager = DialogueManager(answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags, device)
 
     while True:
         try:

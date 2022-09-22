@@ -122,7 +122,7 @@ data = {
 "tags": tags
 }
 
-FILE = "thai_data.pth"
+FILE = "/Projects/checkpoints/intent-model-thai/thai_data.pth"
 torch.save(data, FILE)
 
 print(f'training complete. file saved to {FILE}')
