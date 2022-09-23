@@ -10,33 +10,7 @@ from utils.dialogue_manager import DialogueManager
 from sentence_transformers import SentenceTransformer
 from utils.yamlparser import YamlParser
 
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-config_file = "/Projects/configs/config.yaml"
-cfg = YamlParser(config_file)
-
-# Load sentence embedded model
-answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
-
-# Load intent classfication model
-with open('/Projects/configs/intents.json', 'r') as f:
-    intents = json.load(f)
-
-intent_path = cfg["MODEL"]["intent_model"]
-data = torch.load(intent_path)
-
-# Argument declaration for intent model
-input_size = data["input_size"]
-hidden_size = data["hidden_size"]
-output_size = data["output_size"]
-all_words = data["all_words"]
-tags = data["tags"]
-model_state = data["model_state"]
-
-intent_model = NeuralNet(input_size, hidden_size, output_size).to(device)
-intent_model.load_state_dict(model_state)
-intent_model.eval()
-
+    
 def _get_response(msg: str, msg_manager):
 
     _response = msg_manager.generate_answer(msg)
@@ -45,8 +19,36 @@ def _get_response(msg: str, msg_manager):
 
 
 if __name__ == "__main__":
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    config_file = "/Projects/configs/config.yaml"
+    cfg = YamlParser(config_file)
+    data_corpus = pd.read_csv(cfg["DATA_CORPUS"]["data_csv"])
+
+    # Load sentence embedded model
+    answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
+
+    # Load intent classfication model
+    with open('/Projects/configs/intents.json', 'r') as f:
+        intents = json.load(f)
+
+    intent_path = cfg["MODEL"]["intent_model"]
+    data = torch.load(intent_path)
+
+    # Argument declaration for intent model
+    input_size = data["input_size"]
+    hidden_size = data["hidden_size"]
+    output_size = data["output_size"]
+    all_words = data["all_words"]
+    tags = data["tags"]
+    model_state = data["model_state"]
+
+    intent_model = NeuralNet(input_size, hidden_size, output_size).to(device)
+    intent_model.load_state_dict(model_state)
+    intent_model.eval()
+
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags)
+    msg_manager = DialogueManager(data_corpus, answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags, device)
 
     while True:
         try:

@@ -1,18 +1,28 @@
-from pythainlp import sent_tokenize, word_tokenize
-from pythainlp import word_tokenize 
-from pythainlp import word_vector
-from sklearn.metrics.pairwise import cosine_similarity  
-from pythainlp.word_vector import WordVector
+from pythainlp import word_tokenize
+from sklearn.metrics.pairwise import cosine_similarity
+from pythainlp.corpus.common import thai_words
+from pythainlp.util import Trie
+from utils.yamlparser import YamlParser
+
 import numpy as np
 
+config_file = "/Projects/configs/config.yaml"
+cfg = YamlParser(config_file)
+custom_ls = cfg["CUSTOM_DICT"]["words"]
 
-def thai_tokenize(sentence):
-    return word_tokenize(
-                        sentence,
-                        keep_whitespace=False
-    )
+def thai_tokenize(sentence, custom_list=custom_ls):
+    """
+    split sentence into array of words/tokens
+    a token can be a word or punctuation character, or number
+    """
+    # _dict = {k for k in custom_list}
+    # new_words = _dict.union(thai_words())
+    # custom_dictionary_trie = Trie(new_words)
 
-def thai_bag_of_words(tokenized_sentence, words):
+    return word_tokenize(sentence, engine="longest" ,keep_whitespace=False)
+
+
+def thai_bag_of_words(sentence_words, words):
     """
     return bag of words array:
     1 for each known word that exists in the sentence, 0 otherwise
@@ -21,12 +31,11 @@ def thai_bag_of_words(tokenized_sentence, words):
     words = ["hi", "hello", "I", "you", "bye", "thank", "cool"]
     bog   = [  0 ,    1 ,    0 ,   1 ,    0 ,    0 ,      0]
     """
-    # stem each word
-    sentence_words = [word for word in tokenized_sentence]
+    
     # initialize bag with 0 for each word
     bag = np.zeros(len(words), dtype=np.float32)
     for idx, w in enumerate(words):
-        if w in sentence_words:
+        if w in sentence_words: 
             bag[idx] = 1
 
     return bag
@@ -52,7 +61,3 @@ def sentence_similarity(s1,s2,model=None):
     """ Measure the simirality from "two sentence"
     """
     return cosine_similarity(sentence_vectorizer(str(s1), model),sentence_vectorizer(str(s2), model))
-
-def _word_tkn(s1 : str):
-
-    return word_tokenize(s1)
