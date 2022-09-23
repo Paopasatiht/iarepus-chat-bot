@@ -1,4 +1,8 @@
 MODEL:
-  intent_model: "checkpoints/intent-model-thai/intents_classification.pth"
+  intent_model: "checkpoints/intent-model-thai/thai_data.pth"
   answer_model: "checkpoints/simcse-model-thai-version-supAIkeyword"
   conf_threshold: 0.5
+CUSTOM_DICT:
+  words: ["ขั้นตอน", "เอไอ", "เงินสนับสนุน", "เงินทุน"]
+DATA_CORPUS:
+  data_csv: "/Projects/configs/data_corpus_v2.csv"
