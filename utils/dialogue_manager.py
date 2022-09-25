@@ -171,7 +171,7 @@ class DialogueManager():
                 answer += "* " + values + "\n"
                 
         else:
-            answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superaiengineer2021.tawk.help/"
+            answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superaiengineer2021.tawk.help"
                                 
             _f = open("logs/uncertainly_q.txt", "a")
             _f.write(question + "\n")
