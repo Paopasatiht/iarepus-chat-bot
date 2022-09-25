@@ -6,7 +6,7 @@ from pythainlp import word_tokenize
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils.pythainlp_utils import thai_bag_of_words, thai_tokenize
-
+from crate import client
 from utils.helper import _float_converter
 
 class DialogueManager():
@@ -163,19 +163,36 @@ class DialogueManager():
         """ Query the matching "question" and return "answer"
         """
         answer_dict = self.semantic_search(question)
+        out_qavec = str(self.sent_embeddings(question))
+        out_tagging = self.tagging(question)
+        for intents, probability in out_tagging.items():
+             print(intents, probability)
+        
 
         if len(answer_dict) != 0:
             answer = ''
             for values in (answer_dict.values()): 
                                 
                 answer += "* " + values + "\n"
-                
+                print(answer)
+            connection = client.connect("localhost:4200", timeout = 3)
+            cursor = connection.cursor()
+            cursor.execute(
+                    "INSERT INTO demo (intents,question, answer, probability, status, quevec) VALUES (?,?,?,?,?,?)", [intents,question, answer,probability, 'pass', out_qavec]
+                    )
         else:
-            answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superaiengineer2021.tawk.help/"
-                                
+            answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superaiengineer2021.tawk.help"
+            connection = client.connect("localhost:4200", timeout = 3)
+            cursor = connection.cursor()
+            cursor.execute(
+                    "INSERT INTO demo (intents,question, answer, probability, status, quevec) VALUES (?,?,?,?,?,?)", [intents,question, answer,probability, 'fail', out_qavec]
+                    )
+          
             _f = open("logs/uncertainly_q.txt", "a")
             _f.write(question + "\n")
             _f.close()
-
+        
         return answer
+        
+          
 

@@ -1,3 +1,4 @@
+from distutils.log import debug
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from chat import _get_response
@@ -5,7 +6,6 @@ from utils.dialogue_manager import DialogueManager
 from sentence_transformers import SentenceTransformer
 from utils.yamlparser import YamlParser
 from models.model import NeuralNet
-
 import pandas as pd
 import torch
 import json
@@ -58,4 +58,4 @@ def predict():
 
 # Runing the app :
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0',debug=True)
