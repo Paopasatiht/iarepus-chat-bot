@@ -117,6 +117,7 @@ class DialogueManager():
         
         #Step 2 : Pick the key vector from each intent and measure the similarit 
         t = list(tag_dict)[0]
+        print("Tagginh {}".format(t))
         answer_keys = self.dataset.loc[self.dataset.Intents == t].Keys_vector.tolist()
         for a_key in answer_keys:
             answer_vec = _float_converter(a_key)
