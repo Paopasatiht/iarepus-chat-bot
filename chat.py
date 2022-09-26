@@ -59,5 +59,6 @@ if __name__ == "__main__":
             resp = _get_response(sentence,msg_manager)
             print(resp)
         except Exception as e:
-            print("Error!, Do not use backspace at the end of line")
+            print(e)
+            # print("Error!, Do not use backspace at the end of line")
             
