@@ -4,9 +4,22 @@ import json
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+from utils.yamlparser import YamlParser
 
 from utils.pythainlp_utils import thai_bag_of_words, thai_tokenize
 from models.model import NeuralNet
+
+from pythainlp.corpus.common import thai_words
+from pythainlp.util import Trie
+
+config_file = "/Projects/configs/config.yaml"
+cfg = YamlParser(config_file)
+
+# Declare a custom dictionary :
+custom_ls = cfg["CUSTOM_DICT"]["words"]
+_dict = {k for k in custom_ls}
+custom_words = _dict.union(thai_words())
+custom_dictionary_trie = Trie(custom_words)
 
 with open('./configs/intents.json', 'r',encoding="utf8") as f:
     intents = json.load(f)
@@ -21,7 +34,7 @@ for intent in intents['intents']:
     tags.append(tag)
     for pattern in intent['patterns']:
         # tokenize each word in the sentence
-        w = thai_tokenize(pattern)
+        w = thai_tokenize(pattern, custom_dictionary_trie)
         # add to our words list
         all_words.extend(w)
         # add to xy pair

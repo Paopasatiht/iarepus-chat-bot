@@ -6,12 +6,12 @@ from pythainlp import word_tokenize
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils.pythainlp_utils import thai_bag_of_words, thai_tokenize
-from crate import client
+from utils.database import DataStore
 from utils.helper import _float_converter
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, answer_model, intent_model,input_size, hidden_size, output_size, all_words, tags, device):
+    def __init__(self,data_corpus, custom_ls, answer_model, intent_model,input_size, hidden_size, output_size, all_words, tags, device):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
@@ -33,6 +33,12 @@ class DialogueManager():
         self.all_words = all_words
         self.tags = tags
         self.device = device
+
+        # Custom dictionary
+        self.custom_list = custom_ls
+
+        # Database
+        self.db = DataStore()
 
     def word_embedded(self, sentence, dim = 300, use_mean = True):
         """ Receive a "sentence" and encode to vector in dimension 300
@@ -79,7 +85,7 @@ class DialogueManager():
         """
         tag_dict ={}
 
-        sentenced = thai_tokenize(sentenced)
+        sentenced = thai_tokenize(sentenced, self.custom_list)
         X = thai_bag_of_words(sentenced, self.all_words)
         X = X.reshape(1, X.shape[0])
         X = torch.from_numpy(X).to(self.device)
@@ -90,12 +96,6 @@ class DialogueManager():
         prob = probs[0][predicted.item()]
 
         tag_dict.update({self.tags[predicted.item()] : prob.item()})
-
-
-        # Generate tagging where prob > CONF_SCORE
-        # for idx, p in enumerate(probs[0]):
-        #     if p > self.CONF_SCORE:
-        #         tag_dict.update({self.tags[idx] : p.item()})
 
         return tag_dict
 
@@ -117,7 +117,6 @@ class DialogueManager():
         
         #Step 2 : Pick the key vector from each intent and measure the similarit 
         t = list(tag_dict)[0]
-        print("Tagginh {}".format(t))
         answer_keys = self.dataset.loc[self.dataset.Intents == t].Keys_vector.tolist()
         for a_key in answer_keys:
             answer_vec = _float_converter(a_key)
@@ -131,26 +130,6 @@ class DialogueManager():
             else:
                 pass
 
-
-        # for t in tag_dict.keys():
-        #     answer_keys = self.dataset.loc[self.dataset.Intents == t].Keys_vector.tolist() 
-        #     for answer_key in answer_keys:
-        #         answer_vec = _float_converter(answer_key)
-        #         sim = cosine_similarity(query_vec, answer_vec)
-
-        #         # Calculate a probability of two event
-        #         voting_prob = self.voting(tag_dict[t], sim)
-
-        #         #TODO : Add active learning loop at this point(optional)
-        #         
-        #         if voting_prob > self.COSINE_THRESHOLD:
-        #             most_relavance_dict.update({t : self.dataset.loc[self.dataset.Intents == t].Values.tolist()[0]})
-        #             sim_score.append(voting_prob)
-        #             break
-        #         else:
-        #             pass
-
-
         return most_relavance_dict
 
     def voting(self, tag_prob : float, values_prob : float):
@@ -160,34 +139,28 @@ class DialogueManager():
         return (tag_prob + values_prob) / 2
 
 
-    def generate_answer(self, question):
+    def generate_answer(self, question, debug=False):
         """ Query the matching "question" and return "answer"
         """
         answer_dict = self.semantic_search(question)
         out_qavec = str(self.sent_embeddings(question))
         out_tagging = self.tagging(question)
-        for intents, probability in out_tagging.items():
-             print(intents, probability)
+        intents = list(out_tagging.items())[0][0]
+        probability = list(out_tagging.items())[0][1]
         
-
         if len(answer_dict) != 0:
             answer = ''
             for values in (answer_dict.values()): 
                                 
                 answer += "* " + values + "\n"
-                print(answer)
-            connection = client.connect("localhost:4200", timeout = 3)
-            cursor = connection.cursor()
-            cursor.execute(
-                    "INSERT INTO demo (intents,question, answer, probability, status, quevec) VALUES (?,?,?,?,?,?)", [intents,question, answer,probability, 'pass', out_qavec]
-                    )
+
+            if ~debug:
+                self.db.push_to_database(intents, question, answer, probability, out_qavec, status="pass")        
+            
         else:
-            answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superaiengineer2021.tawk.help"
-            connection = client.connect("localhost:4200", timeout = 3)
-            cursor = connection.cursor()
-            cursor.execute(
-                    "INSERT INTO demo (intents,question, answer, probability, status, quevec) VALUES (?,?,?,?,?,?)", [intents,question, answer,probability, 'fail', out_qavec]
-                    )
+            answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ หน้า facebook fanpage เลยครับ"
+            if ~debug:
+                self.db.push_to_database("unknown", question, answer, probability, out_qavec, status="fail")
           
             _f = open("logs/uncertainly_q.txt", "a")
             _f.write(question + "\n")

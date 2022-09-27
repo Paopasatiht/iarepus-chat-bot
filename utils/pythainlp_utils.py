@@ -1,25 +1,16 @@
 from pythainlp import word_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
-from pythainlp.corpus.common import thai_words
-from pythainlp.util import Trie
-from utils.yamlparser import YamlParser
+
 
 import numpy as np
 
-config_file = "/Projects/configs/config.yaml"
-cfg = YamlParser(config_file)
-custom_ls = cfg["CUSTOM_DICT"]["words"]
-
-def thai_tokenize(sentence, custom_list=custom_ls):
+def thai_tokenize(sentence, custom_dictionary_trie):
     """
     split sentence into array of words/tokens
     a token can be a word or punctuation character, or number
     """
-    # _dict = {k for k in custom_list}
-    # new_words = _dict.union(thai_words())
-    # custom_dictionary_trie = Trie(new_words)
 
-    return word_tokenize(sentence, engine="longest" ,keep_whitespace=False)
+    return word_tokenize(sentence, custom_dict=custom_dictionary_trie ,keep_whitespace=False)
 
 
 def thai_bag_of_words(sentence_words, words):

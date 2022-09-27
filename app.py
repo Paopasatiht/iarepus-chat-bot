@@ -6,9 +6,13 @@ from utils.dialogue_manager import DialogueManager
 from sentence_transformers import SentenceTransformer
 from utils.yamlparser import YamlParser
 from models.model import NeuralNet
+from pythainlp.corpus.common import thai_words
+from pythainlp.util import Trie
+
 import pandas as pd
 import torch
 import json
+
 
 # Declare a Flask app :
 app = Flask(__name__)
@@ -19,6 +23,12 @@ config_file = "/Projects/configs/config.yaml"
 cfg = YamlParser(config_file)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 data_corpus = pd.read_csv(cfg["DATA_CORPUS"]["data_csv"])
+
+# Declare a custom dictionary :
+custom_ls = cfg["CUSTOM_DICT"]["words"]
+_dict = {k for k in custom_ls}
+custom_words = _dict.union(thai_words())
+custom_dictionary_trie = Trie(custom_words)
 
 # Load sentence embedded model
 answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
@@ -51,7 +61,7 @@ def index_get():
 @app.post("/predict")
 def predict():
     text = request.get_json().get("message")
-    msg_manager = DialogueManager(data_corpus, answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags, device)
+    msg_manager = DialogueManager(data_corpus, custom_dictionary_trie, answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags, device)
     response = _get_response(text, msg_manager)
     message =  {"answer" : response}
     return jsonify(message)

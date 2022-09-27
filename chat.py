@@ -5,10 +5,12 @@ import torch
 import pandas as pd
 
 from models.model import NeuralNet
-from utils.nltk_utils import bag_of_words, tokenize
 from utils.dialogue_manager import DialogueManager
 from sentence_transformers import SentenceTransformer
 from utils.yamlparser import YamlParser
+from pythainlp.corpus.common import thai_words
+from pythainlp.util import Trie
+
 
     
 def _get_response(msg: str, msg_manager):
@@ -27,6 +29,12 @@ if __name__ == "__main__":
 
     # Load sentence embedded model
     answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
+
+    # Declare a custom dictionary :
+    custom_ls = cfg["CUSTOM_DICT"]["words"]
+    _dict = {k for k in custom_ls}
+    custom_words = _dict.union(thai_words())
+    custom_dictionary_trie = Trie(custom_words)
 
     # Load intent classfication model
     with open('/Projects/configs/intents.json', 'r') as f:
@@ -48,7 +56,7 @@ if __name__ == "__main__":
     intent_model.eval()
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags, device)
+    msg_manager = DialogueManager(data_corpus, custom_dictionary_trie, answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags, device)
 
     while True:
         try:
@@ -60,5 +68,4 @@ if __name__ == "__main__":
             print(resp)
         except Exception as e:
             print(e)
-            # print("Error!, Do not use backspace at the end of line")
             
