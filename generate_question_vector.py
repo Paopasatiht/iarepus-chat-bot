@@ -2,9 +2,12 @@ import pandas as pd
 from pythainlp import word_vector
 from sentence_transformers import SentenceTransformer 
 from tqdm import tqdm
+from utils.yamlparser import YamlParser
 
 # Global declaration
-model = SentenceTransformer('mrp/simcse-model-roberta-base-thai')
+config_file = "/Projects/configs/config.yaml"
+cfg = YamlParser(config_file)
+model = SentenceTransformer(cfg["MODEL"]["answer_model"])
 
 def sentence_embedded(sentence : str):
     """ embedding the sentenced base on the pre trained weights
@@ -36,10 +39,9 @@ def generate_q_vector(df : pd.DataFrame):
 def save_csv(df: pd.DataFrame):
     """ Save new csv 
     """
-    print(type(df["Keys_vector"][0]))
-    df.to_csv("../Projects/configs/data_corpus_v2.csv", float_format='%g')
+    df.to_csv("/Projects/configs/data_corpus_v2.csv", float_format='%g')
 
 if __name__ == "__main__":
 
-    dataframe = pd.read_csv("../Projects/data_corpus_v2.csv")
+    dataframe = pd.read_csv("/Projects/configs/data_corpus_v2.csv")
     generate_q_vector(dataframe)

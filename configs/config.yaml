@@ -1,8 +1,11 @@
 MODEL:
-  intent_model: "checkpoints/intent-model-thai/intents_classification.pth"
+  intent_model: "checkpoints/intent-model-thai/intent_classification.pth"
   answer_model: "checkpoints/simcse-model-thai-version-supAIkeyword"
   conf_threshold: 0.5
 CUSTOM_DICT:
-  words: ["ขั้นตอน", "เอไอ", "เงินสนับสนุน", "เงินทุน"]
+  words: ["เงินสนับสนุน", "เงินทุน", "ได้รับเงิน", "ได้รับทุน","ได้รับเงินทุน" ,"ได้ตังค์" ,"ได้เงิน" ,"รางวัล" ,"สิทธิประโยชน์" ,"เงินเดือน","เงินในแต่ละช่วง","โครงการ", "กี่ระดับ", "กี่เลเวล", "รูปแบบ", "รูปแบบโครงการ", "รูปแบบโครงการ",
+  "ขั้นตอน", "การสมัคร", "สมัครอย่างไร", "ร่วมโครงการ", "ลงทะเบียน", "เสียเงิน", "เสียตังค์", "่จ่ายเงิน", "ค่าใช้จ่าย", "เกณฑ์คัดเลือก", "เกณฑ์การประเมิน", "คัดเลือก", "โอนหน่วยกิต", "เทียบโอน", "สหกิจ", "เอไอ", "หลักสูตร", "หลักสูตรเอไอระดับพื้นฐาน",
+  "Fundamental level", "เลเวล1", "level1", "lv1", "lv.1", "lvl1", "เลเวล2", "level2", "lv2", "lv.2", "lvl2", "เลเวล3", "level3", "lv3", "lv.3", "lvl3", "หลักสูตรเอไอระดับกลาง", "เอไอระดับกลาง", "Intermediate level",
+  "หลักสูตรเอไอขั้นสูง", "Applied level", "เอไอระดับสูง", "การศึกษา", "นักศึกษา","บอท", "bot"]
 DATA_CORPUS:
   data_csv: "/Projects/configs/data_corpus_v2.csv"
