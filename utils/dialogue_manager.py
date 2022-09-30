@@ -7,16 +7,18 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils.pythainlp_utils import thai_bag_of_words, thai_tokenize
 from utils.database import DataStore
+from models.intent_model import IntentsClassification
 from utils.helper import _float_converter
+
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, custom_ls, answer_model, intent_model,input_size, hidden_size, output_size, all_words, tags, device):
+    def __init__(self,data_corpus, answer_model, intent_model, prob_model, tf_vec, device):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
         self.model = answer_model
-        self.intent_tagging = intent_model
+        self.intent_tagging = IntentsClassification(intent_model, prob_model, tf_vec)
         self.dataset = data_corpus
 
         # Corpus parameter declarations
@@ -24,18 +26,18 @@ class DialogueManager():
         self.QUESTION_VECTORS = self.dataset.Keys_vector
         self.ANSWER = self.dataset.Values
         self.COSINE_THRESHOLD = 0.5
-        self.CONF_SCORE = 0.65
+        self.CONF_SCORE = 0.50
 
         # Model parameters declaration
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.output_size = output_size
-        self.all_words = all_words
-        self.tags = tags
+        # self.input_size = input_size
+        # self.hidden_size = hidden_size
+        # self.output_size = output_size
+        # self.all_words = all_words
+        # self.tags = tags
         self.device = device
 
         # Custom dictionary
-        self.custom_list = custom_ls
+        # self.custom_list = custom_ls
 
         # Database
         self.db = DataStore()
@@ -95,6 +97,8 @@ class DialogueManager():
         probs = torch.softmax(output, dim=1)
         prob = probs[0][predicted.item()]
 
+        print("Tagging : {}, prob {}".format(self.tags[predicted.item()], prob.item()))
+
         tag_dict.update({self.tags[predicted.item()] : prob.item()})
 
         return tag_dict
@@ -113,40 +117,44 @@ class DialogueManager():
         
         most_relavance_dict= {}
         #Step 1 : Generate a key from tagging
-        tag_dict = self.tagging(query_text)
+        # tag_dict = self.tagging(query_text)
+        tag_dict = self.intent_tagging.predict_tagging(query_text)
+        
         
         #Step 2 : Pick the key vector from each intent and measure the similarit 
         t = list(tag_dict)[0]
+        print("Tagging : {}, prob : {}".format(t, tag_dict[t]))
         answer_keys = self.dataset.loc[self.dataset.Intents == t].Keys_vector.tolist()
-        for a_key in answer_keys:
+        q = self.dataset.loc[self.dataset.Intents == t].Keys.tolist()
+        for idx, a_key in enumerate(answer_keys):
+            q_x = q[idx]
             answer_vec = _float_converter(a_key)
             sim = cosine_similarity(query_vec, answer_vec)
             voting_prob = self.voting(tag_dict[t], sim)
 
             # 3.) If score > threshold, pick a values from "Values" columns and update dictionary as "intent" : "Values"
-            if voting_prob > self.COSINE_THRESHOLD:
+            if voting_prob > self.CONF_SCORE:
                 most_relavance_dict.update({t : self.dataset.loc[self.dataset.Intents == t].Values.tolist()[0]})
                 break
             else:
                 pass
 
-        return most_relavance_dict
+        print("Question similarity : {}, prob :  {}".format(q_x, sim[0][0]))
+
+        return most_relavance_dict, voting_prob, t
 
     def voting(self, tag_prob : float, values_prob : float):
         """ Weighting the answer from "intent classification" and "Pattern matching"
         """
-
-        return (tag_prob + values_prob) / 2
+        
+        return (tag_prob[0] + values_prob[0][0]) / 2
 
 
     def generate_answer(self, question, debug=False):
         """ Query the matching "question" and return "answer"
         """
-        answer_dict = self.semantic_search(question)
+        answer_dict, probability, intents = self.semantic_search(question)
         out_qavec = str(self.sent_embeddings(question))
-        out_tagging = self.tagging(question)
-        intents = list(out_tagging.items())[0][0]
-        probability = list(out_tagging.items())[0][1]
         
         if len(answer_dict) != 0:
             answer = ''

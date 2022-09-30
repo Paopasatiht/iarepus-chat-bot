@@ -10,6 +10,7 @@ sentence-transformers
 pandas
 gensim
 easydict
+pyyaml
 
 # Deploy on web application
 flask

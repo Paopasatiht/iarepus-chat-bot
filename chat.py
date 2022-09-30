@@ -2,6 +2,7 @@ import random
 import json
 
 import torch
+import pickle
 import pandas as pd
 
 from models.model import NeuralNet
@@ -10,7 +11,7 @@ from sentence_transformers import SentenceTransformer
 from utils.yamlparser import YamlParser
 from pythainlp.corpus.common import thai_words
 from pythainlp.util import Trie
-
+from sklearn.feature_extraction.text import CountVectorizer
 
     
 def _get_response(msg: str, msg_manager):
@@ -41,22 +42,29 @@ if __name__ == "__main__":
         intents = json.load(f)
 
     intent_path = cfg["MODEL"]["intent_model"]
-    data = torch.load(intent_path)
+    prob_path = cfg["MODEL"]["prob_model"]
 
-    # Argument declaration for intent model
-    input_size = data["input_size"]
-    hidden_size = data["hidden_size"]
-    output_size = data["output_size"]
-    all_words = data["all_words"]
-    tags = data["tags"]
-    model_state = data["model_state"]
+    intent_model = pickle.load(open(intent_path, 'rb'))
+    prob_model = pickle.load(open(prob_path, 'rb'))
 
-    intent_model = NeuralNet(input_size, hidden_size, output_size).to(device)
-    intent_model.load_state_dict(model_state)
-    intent_model.eval()
+    tf_vectorizer = CountVectorizer()
+    vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
+    # data = torch.load(intent_path)
+
+    # # Argument declaration for intent model
+    # input_size = data["input_size"]
+    # hidden_size = data["hidden_size"]
+    # output_size = data["output_size"]
+    # all_words = data["all_words"]
+    # tags = data["tags"]
+    # model_state = data["model_state"]
+
+    # intent_model = NeuralNet(input_size, hidden_size, output_size).to(device)
+    # intent_model.load_state_dict(model_state)
+    # intent_model.eval()
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, custom_dictionary_trie, answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags, device)
+    msg_manager = DialogueManager(data_corpus, answer_model, intent_model, prob_model, tf_vectorizer, device)
 
     while True:
         try:
