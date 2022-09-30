@@ -1,5 +1,6 @@
 MODEL:
-  intent_model: "checkpoints/intent-model-thai/intent_classification.pth"
+  intent_model: "checkpoints/intent-model-thai/intent_model.pkl"
+  prob_model: "checkpoints/intent-model-thai/prob_model.pkl"
   answer_model: "checkpoints/simcse-model-thai-version-supAIkeyword"
   conf_threshold: 0.5
 CUSTOM_DICT:
