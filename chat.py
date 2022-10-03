@@ -54,8 +54,11 @@ if __name__ == "__main__":
     tf_vectorizer = CountVectorizer()
     vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
 
+    # tags declaration
+    kw = list(cfg["KEYWORD_INTENT"].keys())
+
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vectorizer, device)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vectorizer, device, kw)
 
     while True:
         try:
