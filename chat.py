@@ -13,6 +13,8 @@ from pythainlp.corpus.common import thai_words
 from pythainlp.util import Trie
 from sklearn.feature_extraction.text import CountVectorizer
 
+from pythainlp.word_vector import WordVector
+
     
 def _get_response(msg: str, msg_manager):
 
@@ -30,6 +32,8 @@ if __name__ == "__main__":
 
     # Load sentence embedded model
     answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
+    wv = WordVector()
+    wv_model = wv.get_model()
 
     # Declare a custom dictionary :
     custom_ls = cfg["CUSTOM_DICT"]["words"]
@@ -49,22 +53,9 @@ if __name__ == "__main__":
 
     tf_vectorizer = CountVectorizer()
     vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
-    # data = torch.load(intent_path)
-
-    # # Argument declaration for intent model
-    # input_size = data["input_size"]
-    # hidden_size = data["hidden_size"]
-    # output_size = data["output_size"]
-    # all_words = data["all_words"]
-    # tags = data["tags"]
-    # model_state = data["model_state"]
-
-    # intent_model = NeuralNet(input_size, hidden_size, output_size).to(device)
-    # intent_model.load_state_dict(model_state)
-    # intent_model.eval()
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, answer_model, intent_model, prob_model, tf_vectorizer, device)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vectorizer, device)
 
     while True:
         try:
