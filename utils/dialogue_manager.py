@@ -14,12 +14,12 @@ from utils.helper import _float_converter
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vec, device):
+    def __init__(self,data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vec, device, tags):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
         self.model = answer_model
-        self.intent_tagging = IntentsClassification(wv_model,intent_model, prob_model, tf_vec)
+        self.intent_tagging = IntentsClassification(wv_model,intent_model, prob_model, tf_vec, tags)
         self.dataset = data_corpus
         self.wv_model = wv_model
 
@@ -36,7 +36,7 @@ class DialogueManager():
         # self.custom_list = custom_ls
 
         # Database
-        self.db = DataStore()
+        # self.db = DataStore()
 
     def word_embedded(self, sentence, dim = 300, use_mean = True):
         """ Receive a "sentence" and encode to vector in dimension 300
@@ -135,6 +135,8 @@ class DialogueManager():
                 else:
                     pass
 
+        print("Tagging : {}, prob {}".format(most_relavance_dict.keys(), v_prob))
+
         return most_relavance_dict, v_prob
 
     def voting(self, tag_prob : float, values_prob : float):
@@ -158,14 +160,14 @@ class DialogueManager():
                                 
                 answer += "----------------------------" "\n" "* " + values + "\n"
 
-            if ~debug:
-                for idx, _i in enumerate(list(answer_dict.keys())):
-                    self.db.push_to_database(_i, question, answer, probability[idx], str(out_qavec), status="pass")        
+            # if ~debug:
+            #     for idx, _i in enumerate(list(answer_dict.keys())):
+            #         self.db.push_to_database(_i, question, answer, probability[idx], str(out_qavec), status="pass")        
             
         else:
             answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ หน้า facebook fanpage เลยครับ"
-            if ~debug:
-                self.db.push_to_database("unknown", question, answer, probability, str(out_qavec), status="fail")
+            # if ~debug:
+            #     self.db.push_to_database("unknown", question, answer, probability, str(out_qavec), status="fail")
           
             _f = open("logs/uncertainly_q.txt", "a")
             _f.write(question + "\n")
