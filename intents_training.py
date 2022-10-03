@@ -8,6 +8,9 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.calibration import CalibratedClassifierCV
 
 from utils.yamlparser import YamlParser
+from pythainlp.word_vector import WordVector
+from pythainlp import word_tokenize
+wv = WordVector()
 
 import pickle
 
@@ -22,6 +25,47 @@ def prepare_tf_feature(dataframe : pd.DataFrame,vectors : list, split=1):
     y_test = dataframe.Intents[len(dataframe)*split:]
 
     return x_train_counts, y_train, x_test_counts, y_test, 
+
+def prepare_embedded_feature(dataframe : pd.DataFrame):
+
+    model = wv.get_model()
+    # model = wv.get_model()
+    x_counts = []
+    for x in dataframe.Keys :
+        vec = word_embedded(model, x)
+        x_counts.append(vec)
+
+    # x_new = x_counts[0]
+    x_train_counts = np.array(x_counts[:len(dataframe)])
+    # x_test_counts = np.array(x_counts[len(dataframe):])
+    y_train = dataframe.Intents[:len(dataframe)]
+    # y_test = dataframe.Intents[190:]
+
+    x_train_counts = x_train_counts.reshape((len(dataframe), 300))
+    # x_test_counts = x_test_counts.reshape((15, 300))
+
+    return x_train_counts, y_train
+    
+
+def word_embedded(model, sentence, dim = 300, use_mean = True):
+        """ Receive a "sentence" and encode to vector in dimension 300
+            Step : 
+            1.) Word tokenize from "sentence"
+            2.) C
+    model =  SentenceTransformer('checkpoints/simcse-model-thai-version-supAIkeyword')reate a vector size == dimension
+            3.) Add up the vector from the dictionary of index2word
+            4.) return sentence vectorize
+        """
+
+        _w = word_tokenize(sentence)
+        vec = np.zeros((1,dim))
+        for word in _w:
+            if word in model.index_to_key:
+                vec+= model.get_vector(word)
+            else: pass
+        if use_mean: vec /= len(_w)
+        
+        return vec
 
 def model_inititate(x_train, y_train):
 
@@ -56,10 +100,11 @@ def model_training(dataframe : pd.DataFrame):
     vectors = tf_vectorizer.fit_transform(dataframe.Keys)
     
     x_train, y_train, x_test, y_test = prepare_tf_feature(dataframe, vectors)
+    # x_train, y_train = prepare_embedded_feature(dataframe)
     print("----------Training process--------------")
     intent_model, prob_model = model_inititate(x_train, y_train)
 
-    return intent_model, prob_model, tf_vectorizer
+    return intent_model, prob_model
 
 if __name__ == "__main__" :
 
@@ -67,14 +112,4 @@ if __name__ == "__main__" :
     cfg = YamlParser(config_file)
     data_corpus = pd.read_csv(cfg["DATA_CORPUS"]["data_csv"])
     
-    intent_model, prob_model, tf_vectorizer= model_training(data_corpus) 
-
-    # Testing process
-    query_text = "รับคนเยอะมั้ย"
-    x_input = tf_vectorizer.transform([query_text])
-    print("Predicted class : {}".format(intent_model.predict(x_input)))
-
-    # Predicted probability
-    predicted = prob_model.predict_proba(x_input)
-    max_ind = np.argmax(predicted,axis=1)
-    print("Probability : {}".format(predicted[0][np.argmax(predicted)]))
+    intent_model, prob_model= model_training(data_corpus) 
