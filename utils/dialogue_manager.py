@@ -7,33 +7,29 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from utils.pythainlp_utils import thai_bag_of_words, thai_tokenize
 from utils.database import DataStore
+from utils.preprocess import preprocess_text
 from models.intent_model import IntentsClassification
 from utils.helper import _float_converter
 
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, answer_model, intent_model, prob_model, tf_vec, device):
+    def __init__(self,data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vec, device, tags):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
         self.model = answer_model
-        self.intent_tagging = IntentsClassification(intent_model, prob_model, tf_vec)
+        self.intent_tagging = IntentsClassification(wv_model,intent_model, prob_model, tf_vec, tags)
         self.dataset = data_corpus
+        self.wv_model = wv_model
 
         # Corpus parameter declarations
         self.QUESTION = self.dataset.Keys
         self.QUESTION_VECTORS = self.dataset.Keys_vector
         self.ANSWER = self.dataset.Values
-        self.COSINE_THRESHOLD = 0.5
+        self.COSINE_THRESHOLD = 0.35
         self.CONF_SCORE = 0.50
 
-        # Model parameters declaration
-        # self.input_size = input_size
-        # self.hidden_size = hidden_size
-        # self.output_size = output_size
-        # self.all_words = all_words
-        # self.tags = tags
         self.device = device
 
         # Custom dictionary
@@ -55,8 +51,8 @@ class DialogueManager():
         _w = word_tokenize(sentence)
         vec = np.zeros((1,dim))
         for word in _w:
-            if word in self.model.index_to_key:
-                vec+= self.model.get_vector(word)
+            if word in self.wv_model.index_to_key:
+                vec+= self.wv_model.get_vector(word)
             else: pass
         if use_mean: vec /= len(_w)
         
@@ -103,7 +99,7 @@ class DialogueManager():
 
         return tag_dict
 
-    def semantic_search(self, query_text):
+    def semantic_search(self, query_vec, clean_txt):
         """ Search the matching question from the corpus, grasp the "keys" from the probability that passing criterion.
         "one intents" can answer only "one answer"
         # Step to generate a answer dictionary
@@ -113,35 +109,35 @@ class DialogueManager():
         # 4.) Redo with another intent
         """
         
-        query_vec = self.sent_embeddings(query_text)
-        
         most_relavance_dict= {}
+        v_prob = []
         #Step 1 : Generate a key from tagging
-        # tag_dict = self.tagging(query_text)
-        tag_dict = self.intent_tagging.predict_tagging(query_text)
-        
+        tag_dict = self.intent_tagging.predict_tagging(clean_txt) # -> Dictionary with all possible intent
         
         #Step 2 : Pick the key vector from each intent and measure the similarit 
-        t = list(tag_dict)[0]
-        print("Tagging : {}, prob : {}".format(t, tag_dict[t]))
-        answer_keys = self.dataset.loc[self.dataset.Intents == t].Keys_vector.tolist()
-        q = self.dataset.loc[self.dataset.Intents == t].Keys.tolist()
-        for idx, a_key in enumerate(answer_keys):
-            q_x = q[idx]
-            answer_vec = _float_converter(a_key)
-            sim = cosine_similarity(query_vec, answer_vec)
-            voting_prob = self.voting(tag_dict[t], sim)
+        t = list(tag_dict.keys())
+        pp = list(tag_dict.values())
 
-            # 3.) If score > threshold, pick a values from "Values" columns and update dictionary as "intent" : "Values"
-            if voting_prob > self.CONF_SCORE:
-                most_relavance_dict.update({t : self.dataset.loc[self.dataset.Intents == t].Values.tolist()[0]})
-                break
-            else:
-                pass
+        for t in tag_dict:
+            answer_keys = self.dataset.loc[self.dataset.Intents == t].Keys_vector.tolist()
+            
+            for idx, a_key in enumerate(answer_keys):
+                
+                answer_vec = _float_converter(a_key)
+                sim = cosine_similarity(query_vec, answer_vec)
+                voting_prob = self.voting(tag_dict[t], sim)
 
-        print("Question similarity : {}, prob :  {}".format(q_x, sim[0][0]))
+                # 3.) If score > threshold, pick a values from "Values" columns and update dictionary as "intent" : "Values"
+                if (voting_prob > self.CONF_SCORE) and (sim > self.COSINE_THRESHOLD):
+                    most_relavance_dict.update({t : self.dataset.loc[self.dataset.Intents == t].Values.tolist()[0]}) # -> Dictionary with all possible intent
+                    v_prob.append(voting_prob)
+                    break
+                else:
+                    pass
 
-        return most_relavance_dict, voting_prob, t
+        print("Tagging : {}, prob {}".format(most_relavance_dict.keys(), v_prob))
+
+        return most_relavance_dict, v_prob
 
     def voting(self, tag_prob : float, values_prob : float):
         """ Weighting the answer from "intent classification" and "Pattern matching"
@@ -153,22 +149,25 @@ class DialogueManager():
     def generate_answer(self, question, debug=False):
         """ Query the matching "question" and return "answer"
         """
-        answer_dict, probability, intents = self.semantic_search(question)
-        out_qavec = str(self.sent_embeddings(question))
+        clean_txt = preprocess_text(question)
+        out_qavec = self.sent_embeddings(clean_txt)
+        answer_dict, probability = self.semantic_search(out_qavec, clean_txt)
+        
         
         if len(answer_dict) != 0:
             answer = ''
             for values in (answer_dict.values()): 
                                 
-                answer += "* " + values + "\n"
+                answer += "* " + values + "\n" + "                       " "\n"
 
             if ~debug:
-                self.db.push_to_database(intents, question, answer, probability, out_qavec, status="pass")        
+                for idx, _i in enumerate(list(answer_dict.keys())):
+                    self.db.push_to_database(_i, question, answer, probability[idx], str(out_qavec), status="pass")        
             
         else:
-            answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ หน้า facebook fanpage เลยครับ"
+            answer = "ขอโทษนะค้าาา T^T น้อง Aeye ไม่ค่อยเข้าใจความหมายเลยค่ะ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ หน้า facebook fanpage ได้เลยนะคะ"
             if ~debug:
-                self.db.push_to_database("unknown", question, answer, probability, out_qavec, status="fail")
+                    self.db.push_to_database("unknown", question, answer, 0, str(out_qavec), status="fail")
           
             _f = open("logs/uncertainly_q.txt", "a")
             _f.write(question + "\n")
