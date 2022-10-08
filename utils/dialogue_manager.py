@@ -129,7 +129,7 @@ class DialogueManager():
 
                 # 3.) If score > threshold, pick a values from "Values" columns and update dictionary as "intent" : "Values"
                 if (voting_prob > self.CONF_SCORE) and (sim > self.COSINE_THRESHOLD):
-                    most_relavance_dict.update({t : self.dataset.loc[self.dataset.Intents == t].Values.tolist()[0]}) # -> Dictionary with all possible intent
+                    most_relavance_dict.update({t : self.dataset.loc[self.dataset.Intents == t].Values.tolist()[-1]}) # -> Dictionary with all possible intent
                     v_prob.append(voting_prob)
                     break
                 else:
