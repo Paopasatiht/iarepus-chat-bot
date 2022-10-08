@@ -36,7 +36,7 @@ class DialogueManager():
         # self.custom_list = custom_ls
 
         # Database
-        # self.db = DataStore()
+        self.db = DataStore()
 
     def word_embedded(self, sentence, dim = 300, use_mean = True):
         """ Receive a "sentence" and encode to vector in dimension 300
@@ -158,16 +158,16 @@ class DialogueManager():
             answer = ''
             for values in (answer_dict.values()): 
                                 
-                answer += "----------------------------" "\n" "* " + values + "\n"
+                answer += "* " + values + "\n" + "                       " "\n"
 
-            # if ~debug:
-            #     for idx, _i in enumerate(list(answer_dict.keys())):
-            #         self.db.push_to_database(_i, question, answer, probability[idx], str(out_qavec), status="pass")        
+            if ~debug:
+                for idx, _i in enumerate(list(answer_dict.keys())):
+                    self.db.push_to_database(_i, question, answer, probability[idx], str(out_qavec), status="pass")        
             
         else:
-            answer = "น้อง Bot ไม่ค่อยเข้าใจความหมายเลยครับ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ หน้า facebook fanpage เลยครับ"
-            # if ~debug:
-            #     self.db.push_to_database("unknown", question, answer, probability, str(out_qavec), status="fail")
+            answer = "ขอโทษนะค้าาา T^T น้อง Aeye ไม่ค่อยเข้าใจความหมายเลยค่ะ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superai.aiat.or.th/ ได้เลยนะคะ"
+            if ~debug:
+                    self.db.push_to_database("unknown", question, answer, 0, str(out_qavec), status="fail")
           
             _f = open("logs/uncertainly_q.txt", "a")
             _f.write(question + "\n")
