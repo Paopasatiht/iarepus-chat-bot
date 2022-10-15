@@ -17,6 +17,9 @@ import json
 import pickle
 from sklearn.feature_extraction.text import CountVectorizer
 
+# from pythainlp.word_vector import WordVector
+from gensim.models import KeyedVectors
+
 # Declare a Flask app :
 app = Flask(__name__)
 CORS(app)
@@ -32,11 +35,9 @@ answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
 
 # Load intent classification model
 intent_path = cfg["MODEL"]["intent_model"]
-prob_path = cfg["MODEL"]["prob_model"]
 
 # Load model from weight files
 intent_model = pickle.load(open(intent_path, 'rb'))
-prob_model = pickle.load(open(prob_path, 'rb'))
 
 
 # Declare count vectorizer
@@ -45,8 +46,10 @@ vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
 
 # Load sentence embedded model
 answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
-wv = WordVector()
-wv_model = wv.get_model()
+wv_model = KeyedVectors.load_word2vec_format('/Projects/checkpoints/LTW2V_v0.1.bin', binary=True, unicode_errors='ignore')
+
+ # tags declaration
+kw = list(cfg["KEYWORD_INTENT"].keys())
 
 # Main function here :
 @app.get("/")
@@ -57,7 +60,7 @@ def index_get():
 @app.post("/predict")
 def predict():
     text = request.get_json().get("message")
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vectorizer, device)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, device, kw)
     response = _get_response(text, msg_manager)
     message =  {"answer" : response}
     return jsonify(message)
