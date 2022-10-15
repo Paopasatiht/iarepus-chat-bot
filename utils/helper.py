@@ -1,20 +1,8 @@
-import re
-import string
 import numpy as np
+import string
 
-def clean_msg(msg):
-    """ Preprocess by remove the special character and remove white space from the "sentence"
-    """
 
-    msg = re.sub(r'<.*?>','', msg)    
-    msg = re.sub(r'#','',msg)
-    for c in string.punctuation:
-        msg = re.sub(r'\{}'.format(c),'',msg)
-    msg = ''.join(msg.split())
-    
-    return msg
-
-def _float_converter(str_vec : string):
+def _float_converter(str_vec : str):
     """ Convert a "string" in pandas to "float" 
     ref : https://stackoverflow.com/questions/65124688/convert-string-to-numpy-array-python
     
@@ -26,4 +14,4 @@ def _float_converter(str_vec : string):
     """
     _float_vector = np.fromstring(str_vec.replace('[', '').replace(']', '').replace('\n', ''), dtype=float, sep=' ')
 
-    return [_float_vector]
+    return [_float_vector] 

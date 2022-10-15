@@ -2,6 +2,7 @@ import random
 import json
 
 import torch
+import pickle
 import pandas as pd
 
 from models.model import NeuralNet
@@ -10,7 +11,9 @@ from sentence_transformers import SentenceTransformer
 from utils.yamlparser import YamlParser
 from pythainlp.corpus.common import thai_words
 from pythainlp.util import Trie
+from sklearn.feature_extraction.text import CountVectorizer
 
+from pythainlp.word_vector import WordVector
 
     
 def _get_response(msg: str, msg_manager):
@@ -29,6 +32,8 @@ if __name__ == "__main__":
 
     # Load sentence embedded model
     answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
+    wv = WordVector()
+    wv_model = wv.get_model()
 
     # Declare a custom dictionary :
     custom_ls = cfg["CUSTOM_DICT"]["words"]
@@ -41,22 +46,19 @@ if __name__ == "__main__":
         intents = json.load(f)
 
     intent_path = cfg["MODEL"]["intent_model"]
-    data = torch.load(intent_path)
+    prob_path = cfg["MODEL"]["prob_model"]
 
-    # Argument declaration for intent model
-    input_size = data["input_size"]
-    hidden_size = data["hidden_size"]
-    output_size = data["output_size"]
-    all_words = data["all_words"]
-    tags = data["tags"]
-    model_state = data["model_state"]
+    intent_model = pickle.load(open(intent_path, 'rb'))
+    prob_model = pickle.load(open(prob_path, 'rb'))
 
-    intent_model = NeuralNet(input_size, hidden_size, output_size).to(device)
-    intent_model.load_state_dict(model_state)
-    intent_model.eval()
+    tf_vectorizer = CountVectorizer()
+    vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
+
+    # tags declaration
+    kw = list(cfg["KEYWORD_INTENT"].keys())
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, custom_dictionary_trie, answer_model, intent_model, input_size, hidden_size, output_size, all_words, tags, device)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vectorizer, device, kw)
 
     while True:
         try:

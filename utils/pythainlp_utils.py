@@ -4,13 +4,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 import numpy as np
 
-def thai_tokenize(sentence, custom_dictionary_trie):
+def thai_tokenize(sentence, custom_dictionary_trie=None):
     """
     split sentence into array of words/tokens
     a token can be a word or punctuation character, or number
     """
 
-    return word_tokenize(sentence, custom_dict=custom_dictionary_trie ,keep_whitespace=False)
+    return word_tokenize(sentence, engine="longest", keep_whitespace=False)
 
 
 def thai_bag_of_words(sentence_words, words):
