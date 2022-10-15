@@ -13,7 +13,8 @@ from pythainlp.corpus.common import thai_words
 from pythainlp.util import Trie
 from sklearn.feature_extraction.text import CountVectorizer
 
-from pythainlp.word_vector import WordVector
+# from pythainlp.word_vector import WordVector
+from gensim.models import KeyedVectors
 
     
 def _get_response(msg: str, msg_manager):
@@ -32,8 +33,11 @@ if __name__ == "__main__":
 
     # Load sentence embedded model
     answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
-    wv = WordVector()
-    wv_model = wv.get_model()
+
+    # Load word vector model
+    wv_model = KeyedVectors.load_word2vec_format('/Projects/checkpoints/LTW2V_v0.1.bin', binary=True, unicode_errors='ignore')
+    # wv = WordVector()
+    # wv_model = wv.get_model()
 
     # Declare a custom dictionary :
     custom_ls = cfg["CUSTOM_DICT"]["words"]
@@ -46,10 +50,8 @@ if __name__ == "__main__":
         intents = json.load(f)
 
     intent_path = cfg["MODEL"]["intent_model"]
-    prob_path = cfg["MODEL"]["prob_model"]
 
     intent_model = pickle.load(open(intent_path, 'rb'))
-    prob_model = pickle.load(open(prob_path, 'rb'))
 
     tf_vectorizer = CountVectorizer()
     vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
@@ -58,7 +60,7 @@ if __name__ == "__main__":
     kw = list(cfg["KEYWORD_INTENT"].keys())
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vectorizer, device, kw)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, device, kw)
 
     while True:
         try:

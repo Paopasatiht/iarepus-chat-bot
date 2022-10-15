@@ -1,6 +1,5 @@
 MODEL:
-  intent_model: "checkpoints/intent-model-thai/intent_model.pkl"
-  prob_model: "checkpoints/intent-model-thai/prob_model.pkl"
+  intent_model: "checkpoints/intent-model-thai/TF_multioutput_linear_regress.pkl"
   answer_model: "checkpoints/simcse-model-thai-version-supAIkeyword"
   conf_threshold: 0.5
 CUSTOM_DICT:
@@ -15,6 +14,8 @@ DATA_VERSION:
   file_path: "https://drive.google.com/drive/folders/12OAqAU0tI_qu-vqLD_elvmLJ0fP0ONB5?usp=sharing"
 
 KEYWORD_INTENT:
+  aiforall: ["AI"]
+  superaiคือ: ["Dummy here"]
   ขั้นตอนในการสมัคร: ["ขั้นตอน", "สมัคร", "การสมัคร", "เข้าร่วม", "ลงทะเบียน"]
   ค่าใช้จ่ายในการสมัคร: ["ค่าใช้จ่าย", "เสียค่าใช้จ่าย", "จ่าย", "เสียเงิน", "ค่าสมัคร", "รายจ่าย"]
   จำนวนผู้สมัคร: ["จำนวน", "ผู้สมัคร", "จำกัด", "รับ", "เยอะ", ""]
@@ -22,10 +23,12 @@ KEYWORD_INTENT:
   ทักทาย: ["สวัสดี", "Hi", "Hello", "Hey"]
   ภาพรวมโครงการ: ["ภาพรวม", "เมื่อก่อน", "ที่ผ่านมา"]
   รูปแบบโครงการ: ["กิจกรรม", "ระดับ", "รูปแบบ", "โครงการ", "แบ่งออก"]
+  หน้าที่ของบอท: ["Dummy here"]
   หลักสูตรเอไอขั้นสูง: ["ขั้นสูง", "3", "applied"]
   หลักสูตรเอไอระดับกลาง: ["กลาง", "2" ,"intermediate"]
   หลักสูตรเอไอระดับพื้นฐาน: ["พื้นฐาน", "1", "fundamental"]
   เกณฑ์ในการคัดเลือก: ["เกณฑ์", "การประเมิน", "การคัดเลือก", "คัดเลือก", "การคัดเลือก", "ผ่าน", "คะแนน"]
+  เงินสนับสนุน: [Dummy here"]
   เทียบโอนหน่วยกิต: ["เทียบ", "โอน", "หน่วยกิต", "สห", "กิจ" ]
   เอกสารในการสมัคร: ["เอกสาร", "หนังสือ"]
   

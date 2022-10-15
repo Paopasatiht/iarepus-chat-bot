@@ -14,12 +14,12 @@ from utils.helper import _float_converter
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, wv_model, answer_model, intent_model, prob_model, tf_vec, device, tags):
+    def __init__(self,data_corpus, wv_model, answer_model, intent_model, tf_vec, device, tags):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
         self.model = answer_model
-        self.intent_tagging = IntentsClassification(wv_model,intent_model, prob_model, tf_vec, tags)
+        self.intent_tagging = IntentsClassification(wv_model,intent_model, tf_vec, tags)
         self.dataset = data_corpus
         self.wv_model = wv_model
 
@@ -27,8 +27,8 @@ class DialogueManager():
         self.QUESTION = self.dataset.Keys
         self.QUESTION_VECTORS = self.dataset.Keys_vector
         self.ANSWER = self.dataset.Values
-        self.COSINE_THRESHOLD = 0.35
-        self.CONF_SCORE = 0.50
+        self.COSINE_THRESHOLD = 0.40
+        self.CONF_SCORE = 0.60
 
         self.device = device
 
@@ -36,9 +36,9 @@ class DialogueManager():
         # self.custom_list = custom_ls
 
         # Database
-        self.db = DataStore()
+        # self.db = DataStore()
 
-    def word_embedded(self, sentence, dim = 300, use_mean = True):
+    def word_embedded(model, sentence, dim = 400, use_mean = True):
         """ Receive a "sentence" and encode to vector in dimension 300
             Step : 
             1.) Word tokenize from "sentence"
@@ -48,11 +48,11 @@ class DialogueManager():
             4.) return sentence vectorize
         """
 
-        _w = word_tokenize(sentence)
+        _w = word_tokenize(sentence, keep_whitespace=False)
         vec = np.zeros((1,dim))
         for word in _w:
-            if word in self.wv_model.index_to_key:
-                vec+= self.wv_model.get_vector(word)
+            if (word in model.index_to_key):
+                vec+= model.get_vector(word)
             else: pass
         if use_mean: vec /= len(_w)
         
@@ -116,7 +116,6 @@ class DialogueManager():
         
         #Step 2 : Pick the key vector from each intent and measure the similarit 
         t = list(tag_dict.keys())
-        pp = list(tag_dict.values())
 
         for t in tag_dict:
             answer_keys = self.dataset.loc[self.dataset.Intents == t].Keys_vector.tolist()
@@ -160,14 +159,14 @@ class DialogueManager():
                                 
                 answer += "* " + values + "\n" + "                       " "\n"
 
-            if ~debug:
-                for idx, _i in enumerate(list(answer_dict.keys())):
-                    self.db.push_to_database(_i, question, answer, probability[idx], str(out_qavec), status="pass")        
+            # if ~debug:
+            #     for idx, _i in enumerate(list(answer_dict.keys())):
+            #         self.db.push_to_database(_i, question, answer, probability[idx], str(out_qavec), status="pass")        
             
         else:
             answer = "ขอโทษนะค้าาา T^T น้อง Aeye ไม่ค่อยเข้าใจความหมายเลยค่ะ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superai.aiat.or.th/ ได้เลยนะคะ"
-            if ~debug:
-                    self.db.push_to_database("unknown", question, answer, 0, str(out_qavec), status="fail")
+            # if ~debug:
+            #         self.db.push_to_database("unknown", question, answer, 0, str(out_qavec), status="fail")
           
             _f = open("logs/uncertainly_q.txt", "a")
             _f.write(question + "\n")

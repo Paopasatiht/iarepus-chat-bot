@@ -2,15 +2,20 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import confusion_matrix
-
-from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.calibration import CalibratedClassifierCV
 
 from utils.yamlparser import YamlParser
 from pythainlp.word_vector import WordVector
 from pythainlp import word_tokenize
-wv = WordVector()
+
+from gensim.models import KeyedVectors
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.model_selection import train_test_split
+import numpy as np 
+
 
 import pickle
 
@@ -27,27 +32,26 @@ def prepare_tf_feature(dataframe : pd.DataFrame,vectors : list, split=1):
     return x_train_counts, y_train, x_test_counts, y_test, 
 
 def prepare_embedded_feature(dataframe : pd.DataFrame):
+    """ Load LTW2V model and encode dataframe.Keys as vectors, Return as X_train (list), y_train (list)
+    """
 
-    model = wv.get_model()
     # model = wv.get_model()
+    model = KeyedVectors.load_word2vec_format('checkpoints/LTW2V_v0.1.bin', binary=True, unicode_errors='ignore')
+    print("load_embedded model finish")
     x_counts = []
     for x in dataframe.Keys :
         vec = word_embedded(model, x)
         x_counts.append(vec)
 
-    # x_new = x_counts[0]
+    
     x_train_counts = np.array(x_counts[:len(dataframe)])
-    # x_test_counts = np.array(x_counts[len(dataframe):])
     y_train = dataframe.Intents[:len(dataframe)]
-    # y_test = dataframe.Intents[190:]
-
-    x_train_counts = x_train_counts.reshape((len(dataframe), 300))
-    # x_test_counts = x_test_counts.reshape((15, 300))
+    x_train_counts = x_train_counts.reshape((len(dataframe), 400))
 
     return x_train_counts, y_train
     
 
-def word_embedded(model, sentence, dim = 300, use_mean = True):
+def word_embedded(model, sentence, dim = 400, use_mean = True):
         """ Receive a "sentence" and encode to vector in dimension 300
             Step : 
             1.) Word tokenize from "sentence"
@@ -57,54 +61,87 @@ def word_embedded(model, sentence, dim = 300, use_mean = True):
             4.) return sentence vectorize
         """
 
-        _w = word_tokenize(sentence)
+        _w = word_tokenize(sentence, keep_whitespace=False)
         vec = np.zeros((1,dim))
         for word in _w:
-            if word in model.index_to_key:
+            if (word in model.index_to_key):
                 vec+= model.get_vector(word)
             else: pass
         if use_mean: vec /= len(_w)
         
         return vec
 
-def model_inititate(x_train, y_train):
+def prepare_feature(dataframe, vectors, choice = 1) :
+    """ Create a feature feeding to ML model by,
+    1 = TF-Vectors
+    2 = Word embedding
+    3 = Word embedding using bert
+    """
+    mlb = MultiLabelBinarizer()
+    dataframe["Intents"] = dataframe["Intents"].apply(lambda x : [x])
+    tags = mlb.fit_transform(dataframe['Intents'])
 
-    # Model declaration
-    text_classifier_svm = SGDClassifier(loss='hinge', penalty='l2', alpha=1e-3, random_state=42)
+    if choice == 1 :
+        x_train, y_train, x_test, y_test = prepare_tf_feature(dataframe, vectors)
+        x_train, _, y_train, _ = train_test_split(x_train, tags, train_size=0.8, stratify=tags, random_state=42)
+        print("--------------------Prepare TF feature. . . --------------------")
+    elif choice == 2:
+        x_train, y_train = prepare_embedded_feature(dataframe)
+        print("--------------------Prepare embedded feature. . .===============================")
+       
+        print("Check tags : {}".format(mlb.classes_))
+        dataframe["training_feature"] = dataframe["Intents"].copy()
+        for idx, val in enumerate(x_train):
+            dataframe["training_feature"][idx] = val
+        x_train, _, y_train, _ = train_test_split(dataframe["training_feature"], tags, train_size=0.8, stratify=tags, random_state=42)
+        x_train = x_train.to_list()
+    else: pass
+
+    return x_train, y_train
+
+def model_inititate(x_train, y_train):
+    """ Initite the training methodology with using GridSearch algorithms with training parameters
+    """
+
+    # Base estimator with multiOutput classifier
+    RS=42
+    _estimator = MultiOutputClassifier(LogisticRegression(class_weight='balanced', max_iter=10000, random_state=RS), n_jobs = -1)
 
     # Define the Gridsearch Parameters :
-    param_grid = {"alpha" : [1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3],
-                'loss' : ['log_loss'],
-                'penalty': ['l2'],
-                'n_jobs': [-1]}
+    param_grid = {"estimator__C" : np.logspace(-3,3,7),
+            'estimator__penalty': ['l2']}
     
-    grid = GridSearchCV(text_classifier_svm, param_grid, refit = True, verbose = 3)
+    grid = GridSearchCV(_estimator, param_grid, refit = True, verbose = 3)
     clf = grid.fit(x_train, y_train)
-    save_model(clf, "/Projects/checkpoints/intent-model-thai/intent_model.pkl")
+    save_model(clf, "/Projects/checkpoints/intent-model-thai/TF_multioutput_linear_regress.pkl")
 
-    # Calibrate and generate a probability model for SVM
-    calibrator = CalibratedClassifierCV(clf, cv='prefit')
-    model = calibrator.fit(x_train, y_train)
-    save_model(model, "/Projects/checkpoints/intent-model-thai/prob_model.pkl")
-
-    return clf, model
+    return clf
 
 def save_model(model,filepath : str, ):
+    """ Save model with pickle lib
+    """
 
     with open(filepath, 'wb') as f:
         pickle.dump(model, f)
 
 def model_training(dataframe : pd.DataFrame):
+    """ Main function here Extract the feature using
+    - 1.) TERM-FREQUENCY features (TF)
+    - 2.) Word Embedded for training
+    - 3.) etc
+    """
 
     tf_vectorizer = CountVectorizer()
     vectors = tf_vectorizer.fit_transform(dataframe.Keys)
     
-    x_train, y_train, x_test, y_test = prepare_tf_feature(dataframe, vectors)
-    # x_train, y_train = prepare_embedded_feature(dataframe)
+    # Prepare feature using tf vectors, word embedded
+    x_train, y_train = prepare_feature(dataframe, vectors)
+    
     print("----------Training process--------------")
-    intent_model, prob_model = model_inititate(x_train, y_train)
 
-    return intent_model, prob_model
+    intent_model = model_inititate(x_train, y_train)
+
+    return intent_model
 
 if __name__ == "__main__" :
 
@@ -112,4 +149,7 @@ if __name__ == "__main__" :
     cfg = YamlParser(config_file)
     data_corpus = pd.read_csv(cfg["DATA_CORPUS"]["data_csv"])
     
-    intent_model, prob_model= model_training(data_corpus) 
+    intent_model = model_training(data_corpus) 
+
+    print("----------Finish Training process--------------")
+
