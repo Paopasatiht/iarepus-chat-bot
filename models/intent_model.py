@@ -20,7 +20,7 @@ class IntentsClassification():
         self.confidence_score = 0.40
         self.wv_model = word_vector_model
         self.tags = tags
-        self.weights_standout = 0.50
+        self.weights_standout = 0.70
 
     def word_embedded(self ,model, sentence, dim = 400, use_mean = True):
         """ Receive a "sentence" and encode to vector in dimension 300
