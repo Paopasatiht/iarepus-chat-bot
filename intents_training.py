@@ -71,7 +71,7 @@ def word_embedded(model, sentence, dim = 400, use_mean = True):
         
         return vec
 
-def prepare_feature(dataframe, vectors, choice = 1) :
+def prepare_feature(dataframe, vectors, choice = 2) :
     """ Create a feature feeding to ML model by,
     1 = TF-Vectors
     2 = Word embedding
@@ -113,7 +113,7 @@ def model_inititate(x_train, y_train):
     
     grid = GridSearchCV(_estimator, param_grid, refit = True, verbose = 3)
     clf = grid.fit(x_train, y_train)
-    save_model(clf, "/Projects/checkpoints/intent-model-thai/TF_multioutput_linear_regress.pkl")
+    save_model(clf, "/Projects/checkpoints/intent-model-thai/embedded_multioutput_linear_regress.pkl")
 
     return clf
 
