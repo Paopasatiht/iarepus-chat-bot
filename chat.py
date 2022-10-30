@@ -5,13 +5,13 @@ import torch
 import pickle
 import pandas as pd
 
-from models.model import NeuralNet
 from utils.dialogue_manager import DialogueManager
 from sentence_transformers import SentenceTransformer
 from utils.yamlparser import YamlParser
 from pythainlp.corpus.common import thai_words
 from pythainlp.util import Trie
 from sklearn.feature_extraction.text import CountVectorizer
+from utils.preprocess import get_th_tokens
 
 # from pythainlp.word_vector import WordVector
 from gensim.models import KeyedVectors
@@ -53,14 +53,17 @@ if __name__ == "__main__":
 
     intent_model = pickle.load(open(intent_path, 'rb'))
 
-    tf_vectorizer = CountVectorizer()
+    tf_vectorizer = CountVectorizer(tokenizer=get_th_tokens, ngram_range=(1, 2))
     vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
 
     # tags declaration
-    kw = list(cfg["KEYWORD_INTENT"].keys())
+    # kw = list(cfg["KEYWORD_INTENT"].keys())
+
+    # Declared a dictionary from config.yaml files
+    config_dict = cfg["KEYWORD_INTENT"]
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, device, kw)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict)
 
     while True:
         try:

@@ -1,3 +1,4 @@
+from models.sent_emb_model import SentEmbModel
 import torch
 import numpy as np
 import pandas as pd
@@ -14,15 +15,17 @@ from utils.helper import _float_converter
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, wv_model, answer_model, intent_model, tf_vec, device, tags):
+    def __init__(self,data_corpus, wv_model, sent_emb_model, intent_model, tf_vec, config_dict):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
-        self.model = answer_model
-        self.intent_tagging = IntentsClassification(wv_model,intent_model, tf_vec, tags)
+        # self.model = answer_model
+        self.sent_embedding = SentEmbModel(sent_emb_model)
+        self.intent_tagging = IntentsClassification(wv_model,intent_model, tf_vec, config_dict)
+        
+        # Corpus declaration
         self.dataset = data_corpus
-        self.wv_model = wv_model
-
+        self.tags = list(config_dict.keys())
         # Corpus parameter declarations
         self.QUESTION = self.dataset.Keys
         self.QUESTION_VECTORS = self.dataset.Keys_vector
@@ -30,74 +33,12 @@ class DialogueManager():
         self.COSINE_THRESHOLD = 0.40
         self.CONF_SCORE = 0.60
 
-        self.device = device
-
         # Custom dictionary
         # self.custom_list = custom_ls
 
         # Database
         # self.db = DataStore()
 
-    def word_embedded(model, sentence, dim = 400, use_mean = True):
-        """ Receive a "sentence" and encode to vector in dimension 300
-            Step : 
-            1.) Word tokenize from "sentence"
-            2.) C
-    model =  SentenceTransformer('checkpoints/simcse-model-thai-version-supAIkeyword')reate a vector size == dimension
-            3.) Add up the vector from the dictionary of index2word
-            4.) return sentence vectorize
-        """
-
-        _w = word_tokenize(sentence, keep_whitespace=False)
-        vec = np.zeros((1,dim))
-        for word in _w:
-            if (word in model.index_to_key):
-                vec+= model.get_vector(word)
-            else: pass
-        if use_mean: vec /= len(_w)
-        
-        return vec
-
-    def sent_embeddings(self, sentenced : str):
-        """ embedding the sentenced base on the pre trained weights, bert embeddings
-        Parameters
-            Input : 
-                sentenced : string
-                          : string that received from the user
-            Output :
-                answer_vec : list
-                        : list of vector with fix dimension = 768
-        """
-
-        return self.model.encode([sentenced])
-
-    def tagging(self, sentenced : str):
-        """ Receive a user input and predict the tags 
-        Parameters
-            Input :
-                sentenced : string
-                          : string that was receive from user
-            Output :
-                tag : string
-                    : Refer to which class a query vector is, Reference from tag in configs/intents.json
-        """
-        tag_dict ={}
-
-        sentenced = thai_tokenize(sentenced, self.custom_list)
-        X = thai_bag_of_words(sentenced, self.all_words)
-        X = X.reshape(1, X.shape[0])
-        X = torch.from_numpy(X).to(self.device)
-
-        output = self.intent_tagging(X)
-        _, predicted = torch.max(output, dim=1)
-        probs = torch.softmax(output, dim=1)
-        prob = probs[0][predicted.item()]
-
-        print("Tagging : {}, prob {}".format(self.tags[predicted.item()], prob.item()))
-
-        tag_dict.update({self.tags[predicted.item()] : prob.item()})
-
-        return tag_dict
 
     def semantic_search(self, query_vec, clean_txt):
         """ Search the matching question from the corpus, grasp the "keys" from the probability that passing criterion.
@@ -120,7 +61,7 @@ class DialogueManager():
         for t in tag_dict:
             answer_keys = self.dataset.loc[self.dataset.Intents == t].Keys_vector.tolist()
             
-            for idx, a_key in enumerate(answer_keys):
+            for _, a_key in enumerate(answer_keys):
                 
                 answer_vec = _float_converter(a_key)
                 sim = cosine_similarity(query_vec, answer_vec)
@@ -133,8 +74,6 @@ class DialogueManager():
                     break
                 else:
                     pass
-
-        print("Tagging : {}, prob {}".format(most_relavance_dict.keys(), v_prob))
 
         return most_relavance_dict, v_prob
 
@@ -149,7 +88,7 @@ class DialogueManager():
         """ Query the matching "question" and return "answer"
         """
         clean_txt = preprocess_text(question)
-        out_qavec = self.sent_embeddings(clean_txt)
+        out_qavec = self.sent_embedding.sent_embeddings(clean_txt)
         answer_dict, probability = self.semantic_search(out_qavec, clean_txt)
         
         

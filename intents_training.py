@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import GridSearchCV
+from sklearn.svm import LinearSVC, SVC
 from sklearn.calibration import CalibratedClassifierCV
 
 from utils.yamlparser import YamlParser
@@ -71,7 +72,7 @@ def word_embedded(model, sentence, dim = 400, use_mean = True):
         
         return vec
 
-def prepare_feature(dataframe, vectors, choice = 2) :
+def prepare_feature(dataframe, vectors, choice = 1) :
     """ Create a feature feeding to ML model by,
     1 = TF-Vectors
     2 = Word embedding
@@ -105,15 +106,18 @@ def model_inititate(x_train, y_train):
 
     # Base estimator with multiOutput classifier
     RS=42
-    _estimator = MultiOutputClassifier(LogisticRegression(class_weight='balanced', max_iter=10000, random_state=RS), n_jobs = -1)
+    _estimator = MultiOutputClassifier(SVC(class_weight='balanced', max_iter=10000,
+                                             kernel='linear',random_state=RS, probability=True), n_jobs = -1)
 
     # Define the Gridsearch Parameters :
-    param_grid = {"estimator__C" : np.logspace(-3,3,7),
-            'estimator__penalty': ['l2']}
+    param_grid = {"estimator__C" : [0.1, 1, 10, 100],
+            'estimator__gamma': [1,0.1,0.01,0.001],
+            'estimator__kernel': ['rbf', 'poly', 'sigmoid']
+            }
     
     grid = GridSearchCV(_estimator, param_grid, refit = True, verbose = 3)
     clf = grid.fit(x_train, y_train)
-    save_model(clf, "/Projects/checkpoints/intent-model-thai/embedded_multioutput_linear_regress.pkl")
+    save_model(clf, "/Projects/checkpoints/intent-model-thai/TF_multioutput_linear_regress.pkl")
 
     return clf
 
@@ -124,6 +128,15 @@ def save_model(model,filepath : str, ):
     with open(filepath, 'wb') as f:
         pickle.dump(model, f)
 
+def get_th_tokens(text):
+
+  text = text.lower()
+  text = text.replace('\n', ' ')
+  tokens = word_tokenize(text,keep_whitespace=False)
+  
+  return tokens
+
+
 def model_training(dataframe : pd.DataFrame):
     """ Main function here Extract the feature using
     - 1.) TERM-FREQUENCY features (TF)
@@ -131,7 +144,7 @@ def model_training(dataframe : pd.DataFrame):
     - 3.) etc
     """
 
-    tf_vectorizer = CountVectorizer()
+    tf_vectorizer = CountVectorizer(tokenizer=get_th_tokens, ngram_range = (1, 2))
     vectors = tf_vectorizer.fit_transform(dataframe.Keys)
     
     # Prepare feature using tf vectors, word embedded

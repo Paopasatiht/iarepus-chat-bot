@@ -65,3 +65,10 @@ def generate_n_gram(sentence : str, n = 3) -> List:
     ngrams = zip(*[tokens[i:] for i in range(n)])
     return [" ".join(ngram) for ngram in ngrams]
     
+def get_th_tokens(text : str):
+
+  text = text.lower()
+  text = text.replace('\n', ' ')
+  tokens = word_tokenize(text,keep_whitespace=False)
+  
+  return tokens
