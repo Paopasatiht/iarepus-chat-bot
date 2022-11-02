@@ -11,19 +11,23 @@ from pythainlp.tag import pos_tag
 config_file = "/Projects/configs/config.yaml"
 cfg = YamlParser(config_file)
 kw = cfg["KEYWORD_INTENT"]
+custom_keyword = cfg["CUSTOM_DICT"]['words']
 
 
 class IntentsClassification():
 
-    def __init__(self, word_vector_model, intent_model, count_vec, config_dict):
+    def __init__(self, word_vector_model, sent_embedded_model , intent_model, count_vec, config_dict, custom_dict):
 
         self.intent_model = intent_model
+        self.sent_emb_model = sent_embedded_model
         self.count_vec = count_vec
         self.wv_model = word_vector_model
         self.config_dict = config_dict
         self.tags = list(config_dict.keys())
-        self.confidence_score = 0.40
-        self.weights_standout = 0.70
+        self.custom_dict = custom_dict
+
+        self.confidence_score = 0.65
+        self.weights_standout = 0.60
 
     def word_embedded(self, _w : list, dim = 400, use_mean = True):
         """ Receive a "sentence" and encode to vector in dimension 300
@@ -43,7 +47,7 @@ class IntentsClassification():
 
     def sentence_similarity(self, s1, s2):
 
-        return cosine_similarity(self.word_embedded(str(s1)),self.word_embedded(str(s2)))
+        return cosine_similarity(self.sent_emb_model.sent_embeddings(s1), self.sent_emb_model.sent_embeddings(s2))
 
     def predict_score(self, feature_sentence, gram_sentence) -> list:
         """ predicted => list with array
@@ -76,10 +80,12 @@ class IntentsClassification():
         tag_dict ={}
 
         for s in all_n_gram_phase :
+            print(s) #- > string
             if choice == 1:
                 s_vector = self.count_vec.transform([s])
             elif choice == 2:
-                s_vector = self.word_embedded(s)
+                # s_vector = self.word_embedded(s)
+                s_vector = self.sent_emb_model.sent_embeddings(s)
             _score, _intent_idx = self.predict_score(s_vector, s)
             for ss, i_idx in zip(_score, _intent_idx):
                 if (ss > self.confidence_score) : # Update to newer probability
@@ -100,29 +106,36 @@ class IntentsClassification():
         
         """
         tag_dict = {}
-        tokens = [token for token in word_tokenize(sentence, keep_whitespace=False) if token != ""]
-
-        word_with_tag = pos_tag(tokens, corpus="orchid_ud")
-
-        # Pull out only the word with "Verb tag"
         words = []
-        for k in word_with_tag:
-            if k[1] == "VERB":
-                words.append(k[0])
+        tokens = [token for token in word_tokenize(sentence, custom_dict=self.custom_dict, keep_whitespace=False) if token != ""]
+
+        # print(custom_keyword)
+        for _word in tokens:
+            if _word in custom_keyword:
+                words.append(_word)
         
-        print("Verb word : {}".format(words))
+        # If no keyword in custom list pick from "NOUN" and "VERB"
+        if len(words) == 0:
+            word_with_tag = pos_tag(tokens, corpus = "orchid_ud")
+            for k in word_with_tag:
+                if k[1] == "VERB" or "NOUN":
+                    words.append(k[0])
+
+        
+        print("Keyword that pops up : {}".format(words))
 
         # Loop checking the "Most similarity" in "Configs dictionary"
-        #TODO: fix here for reduct complexity
+        #TODO: fix here for reduce complexity
         for w in words:
             for item in self.config_dict.items():
                 for x in item[1]:
                     sim = self.sentence_similarity(w, x)
-                    print("Words in config : {}, prob : {}".format(x, sim))
+                    
                     if sim > self.confidence_score:
+                        print("Words in config : {}, prob : {}".format(x, sim))
                         tag_dict.update({item[0] : sim})
 
-    
+        print("Passing criterion dictionary : {}".format(tag_dict.keys()))
         return tag_dict
 
 

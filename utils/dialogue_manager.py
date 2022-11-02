@@ -15,32 +15,31 @@ from utils.helper import _float_converter
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, wv_model, sent_emb_model, intent_model, tf_vec, config_dict):
+    def __init__(self,data_corpus, wv_model, sent_emb_model, intent_model, tf_vec, config_dict, custom_dictionary_trie):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
         # self.model = answer_model
         self.sent_embedding = SentEmbModel(sent_emb_model)
-        self.intent_tagging = IntentsClassification(wv_model,intent_model, tf_vec, config_dict)
+        self.intent_tagging = IntentsClassification(wv_model, self.sent_embedding, intent_model, tf_vec, config_dict, custom_dictionary_trie)
         
         # Corpus declaration
         self.dataset = data_corpus
         self.tags = list(config_dict.keys())
+        # self.custom_list = custom_ls
+
         # Corpus parameter declarations
         self.QUESTION = self.dataset.Keys
         self.QUESTION_VECTORS = self.dataset.Keys_vector
         self.ANSWER = self.dataset.Values
-        self.COSINE_THRESHOLD = 0.40
-        self.CONF_SCORE = 0.60
-
-        # Custom dictionary
-        # self.custom_list = custom_ls
+        self.COSINE_THRESHOLD = 0.30
+        self.CONF_SCORE = 0.50
 
         # Database
         # self.db = DataStore()
 
 
-    def semantic_search(self, query_vec, clean_txt):
+    def semantic_search(self, query_vec, clean_txt, is_ml:bool = False):
         """ Search the matching question from the corpus, grasp the "keys" from the probability that passing criterion.
         "one intents" can answer only "one answer"
         # Step to generate a answer dictionary
@@ -53,8 +52,10 @@ class DialogueManager():
         most_relavance_dict= {}
         v_prob = []
         #Step 1 : Generate a key from tagging
-        tag_dict = self.intent_tagging.predict_tagging(clean_txt) # -> Dictionary with all possible intent
-        
+        if is_ml:
+            tag_dict = self.intent_tagging.predict_tagging(clean_txt) # -> Dictionary with all possible intent
+        else :
+            tag_dict = self.intent_tagging.rule_base_tagging(clean_txt)
         #Step 2 : Pick the key vector from each intent and measure the similarit 
         t = list(tag_dict.keys())
 
@@ -66,9 +67,10 @@ class DialogueManager():
                 answer_vec = _float_converter(a_key)
                 sim = cosine_similarity(query_vec, answer_vec)
                 voting_prob = self.voting(tag_dict[t], sim)
+                print(" Tags : {} \n Check voting score : {} \n similarity score : {}".format(t,voting_prob, sim))
 
                 # 3.) If score > threshold, pick a values from "Values" columns and update dictionary as "intent" : "Values"
-                if (voting_prob > self.CONF_SCORE) and (sim > self.COSINE_THRESHOLD):
+                if (voting_prob > self.CONF_SCORE):
                     most_relavance_dict.update({t : self.dataset.loc[self.dataset.Intents == t].Values.tolist()[-1]}) # -> Dictionary with all possible intent
                     v_prob.append(voting_prob)
                     break

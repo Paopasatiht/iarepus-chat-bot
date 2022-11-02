@@ -32,20 +32,24 @@ if __name__ == "__main__":
     data_corpus = pd.read_csv(cfg["DATA_CORPUS"]["data_csv"])
 
     # Load sentence embedded model
+    print("Prepare transformers sentence embedding model . . .")
     answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
 
     # Load word vector model
+    print("Prepare word embedding model . . .")
     wv_model = KeyedVectors.load_word2vec_format('/Projects/checkpoints/LTW2V_v0.1.bin', binary=True, unicode_errors='ignore')
     # wv = WordVector()
     # wv_model = wv.get_model()
 
     # Declare a custom dictionary :
+    print("Prepare custom dictionary ...")
     custom_ls = cfg["CUSTOM_DICT"]["words"]
     _dict = {k for k in custom_ls}
     custom_words = _dict.union(thai_words())
     custom_dictionary_trie = Trie(custom_words)
 
     # Load intent classfication model
+    print("Prepare ML intent model . . .")
     with open('/Projects/configs/intents.json', 'r') as f:
         intents = json.load(f)
 
@@ -63,7 +67,7 @@ if __name__ == "__main__":
     config_dict = cfg["KEYWORD_INTENT"]
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie)
 
     while True:
         try:

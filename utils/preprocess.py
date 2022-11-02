@@ -54,7 +54,7 @@ def preprocess_text(sentence : str):
 
     return normalize_text
 
-def generate_n_gram(sentence : str, n = 3) -> List:
+def generate_n_gram(sentence : str, n = 5) -> List:
     
     tokens = [token for token in word_tokenize(sentence) if token != ""]
     

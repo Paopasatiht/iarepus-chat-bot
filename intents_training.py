@@ -4,7 +4,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import GridSearchCV
 from sklearn.svm import LinearSVC, SVC
-from sklearn.calibration import CalibratedClassifierCV
 
 from utils.yamlparser import YamlParser
 from pythainlp.word_vector import WordVector
@@ -15,10 +14,16 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import train_test_split
-import numpy as np 
+import numpy as np
+from sentence_transformers import SentenceTransformer 
 
 
 import pickle
+import os
+
+SENT_EMB_MODEL =  SentenceTransformer("/Projects/checkpoints/simcse-model-thai-version-supAIkeyword")
+os.environ["TOKENIZERS_PARALLELISM"] = "True"
+# Reference : https://www.sbert.net/index.html?fbclid=IwAR2rsZExykBNvT4aWT1LJfq6diGkIPg1S1ZJ3ghTTf5xQfKsoREVhi-FA6k
 
 def prepare_tf_feature(dataframe : pd.DataFrame,vectors : list, split=1):
     """ Prepare TF-feature
@@ -32,27 +37,35 @@ def prepare_tf_feature(dataframe : pd.DataFrame,vectors : list, split=1):
 
     return x_train_counts, y_train, x_test_counts, y_test, 
 
-def prepare_embedded_feature(dataframe : pd.DataFrame):
+def prepare_embedded_feature(dataframe : pd.DataFrame, dim_size:int = 768):
     """ Load LTW2V model and encode dataframe.Keys as vectors, Return as X_train (list), y_train (list)
     """
 
-    # model = wv.get_model()
     model = KeyedVectors.load_word2vec_format('checkpoints/LTW2V_v0.1.bin', binary=True, unicode_errors='ignore')
     print("load_embedded model finish")
     x_counts = []
     for x in dataframe.Keys :
-        vec = word_embedded(model, x)
+        # vec = word_embedded(model, x)
+        vec = SENT_EMB_MODEL.encode([x])
+        print(vec.shape)
         x_counts.append(vec)
+    # x_counts = []
+    # print("Load sentenced embedd model !")
+    # for x in dataframe.Keys:
+    #     vec = SENT_EMB_MODEL.encode([x])
+    #     x_counts.append(vec)
 
     
     x_train_counts = np.array(x_counts[:len(dataframe)])
     y_train = dataframe.Intents[:len(dataframe)]
-    x_train_counts = x_train_counts.reshape((len(dataframe), 400))
+    x_train_counts = x_train_counts.reshape((len(dataframe), dim_size))
+
+    print("Finish prepare feature !")
 
     return x_train_counts, y_train
     
 
-def word_embedded(model, sentence, dim = 400, use_mean = True):
+def word_embedded(model, sentence, dim = 400, use_mean = True) -> np.array:
         """ Receive a "sentence" and encode to vector in dimension 300
             Step : 
             1.) Word tokenize from "sentence"
@@ -72,7 +85,7 @@ def word_embedded(model, sentence, dim = 400, use_mean = True):
         
         return vec
 
-def prepare_feature(dataframe, vectors, choice = 1) :
+def prepare_feature(dataframe, vectors, choice = 2) :
     """ Create a feature feeding to ML model by,
     1 = TF-Vectors
     2 = Word embedding
@@ -117,7 +130,7 @@ def model_inititate(x_train, y_train):
     
     grid = GridSearchCV(_estimator, param_grid, refit = True, verbose = 3)
     clf = grid.fit(x_train, y_train)
-    save_model(clf, "/Projects/checkpoints/intent-model-thai/TF_multioutput_linear_regress.pkl")
+    save_model(clf, "/Projects/checkpoints/intent-model-thai/bert_embeddings_multioutput_linear_regress.pkl")
 
     return clf
 
