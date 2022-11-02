@@ -5,13 +5,13 @@ import torch
 import pickle
 import pandas as pd
 
-from models.model import NeuralNet
 from utils.dialogue_manager import DialogueManager
 from sentence_transformers import SentenceTransformer
 from utils.yamlparser import YamlParser
 from pythainlp.corpus.common import thai_words
 from pythainlp.util import Trie
 from sklearn.feature_extraction.text import CountVectorizer
+from utils.preprocess import get_th_tokens
 
 # from pythainlp.word_vector import WordVector
 from gensim.models import KeyedVectors
@@ -32,20 +32,24 @@ if __name__ == "__main__":
     data_corpus = pd.read_csv(cfg["DATA_CORPUS"]["data_csv"])
 
     # Load sentence embedded model
+    print("Prepare transformers sentence embedding model . . .")
     answer_model = SentenceTransformer(cfg["MODEL"]["answer_model"])
 
     # Load word vector model
+    print("Prepare word embedding model . . .")
     wv_model = KeyedVectors.load_word2vec_format('/Projects/checkpoints/LTW2V_v0.1.bin', binary=True, unicode_errors='ignore')
     # wv = WordVector()
     # wv_model = wv.get_model()
 
     # Declare a custom dictionary :
+    print("Prepare custom dictionary ...")
     custom_ls = cfg["CUSTOM_DICT"]["words"]
     _dict = {k for k in custom_ls}
     custom_words = _dict.union(thai_words())
     custom_dictionary_trie = Trie(custom_words)
 
     # Load intent classfication model
+    print("Prepare ML intent model . . .")
     with open('/Projects/configs/intents.json', 'r') as f:
         intents = json.load(f)
 
@@ -53,14 +57,17 @@ if __name__ == "__main__":
 
     intent_model = pickle.load(open(intent_path, 'rb'))
 
-    tf_vectorizer = CountVectorizer()
+    tf_vectorizer = CountVectorizer(tokenizer=get_th_tokens, ngram_range=(1, 2))
     vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
 
     # tags declaration
-    kw = list(cfg["KEYWORD_INTENT"].keys())
+    # kw = list(cfg["KEYWORD_INTENT"].keys())
+
+    # Declared a dictionary from config.yaml files
+    config_dict = cfg["KEYWORD_INTENT"]
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, device, kw)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie)
 
     while True:
         try:
