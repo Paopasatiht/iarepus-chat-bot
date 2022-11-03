@@ -20,6 +20,7 @@ CUSTOM_DICT:
   ] 
 DATA_CORPUS:
   data_csv: "/Projects/configs/data_corpus_v2.csv"
+  keyword_csv: "/Projects/configs/keyword_intent.csv"
 
 DATA_VERSION:
   file_path: "https://drive.google.com/drive/folders/12OAqAU0tI_qu-vqLD_elvmLJ0fP0ONB5?usp=sharing"

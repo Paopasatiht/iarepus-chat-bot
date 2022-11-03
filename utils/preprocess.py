@@ -7,6 +7,7 @@ from pythainlp.spell import spell
 from pythainlp import word_tokenize
 
 from pythainlp.corpus import thai_stopwords
+from pythainlp import correct
 
 
 
@@ -29,9 +30,10 @@ def normalize_msg(msg : str):
 def spell_corrector(msg : str):
     """ Receive a word and process the spell checker
     """
-
-    word_list = word_tokenize(msg)
-    r_msg = ''.join(spell(w)[0] for w in word_list)
+    # r_msg = correct(msg)
+    word_list = word_tokenize(msg, engine="longest",keep_whitespace=False)
+    print("ตัดคำ : {}".format(word_list))
+    r_msg = ''.join(correct(w) for w in word_list)
 
     return  r_msg
 
