@@ -16,7 +16,7 @@ custom_keyword = cfg["CUSTOM_DICT"]['words']
 
 class IntentsClassification():
 
-    def __init__(self, word_vector_model, sent_embedded_model , intent_model, count_vec, config_dict, custom_dict):
+    def __init__(self, word_vector_model, sent_embedded_model , intent_model, count_vec, config_dict, custom_dict, keyword_csv):
 
         self.intent_model = intent_model
         self.sent_emb_model = sent_embedded_model
@@ -25,6 +25,7 @@ class IntentsClassification():
         self.config_dict = config_dict
         self.tags = list(config_dict.keys())
         self.custom_dict = custom_dict
+        self.keyword_csv = keyword_csv
 
         self.confidence_score = 0.65
         self.weights_standout = 0.60
@@ -44,6 +45,20 @@ class IntentsClassification():
         if use_mean: vec /= len(_w)
         
         return vec
+
+    def _float_converter(self, str_vec : str):
+        """ Convert a "string" in pandas to "float" 
+        ref : https://stackoverflow.com/questions/65124688/convert-string-to-numpy-array-python
+        
+        Parameters : 
+            str_vec : string
+                    : A list of list of float that was convert in the term of string in csv files
+            float_vector : list
+                    : A list of list of float (Ex : [[1.540, 1.374, 7.129 ... , ... , 4.567]]) dim = 756
+        """
+        _float_vector = np.fromstring(str_vec.replace('[', '').replace(']', '').replace('\n', ''), dtype=float, sep=' ')
+
+        return [_float_vector] 
 
     def sentence_similarity(self, s1, s2):
 
@@ -127,16 +142,25 @@ class IntentsClassification():
         # Loop checking the "Most similarity" in "Configs dictionary"
         #TODO: fix here for reduce complexity
         for w in words:
-            for item in self.config_dict.items():
-                for x in item[1]:
-                    sim = self.sentence_similarity(w, x)
-                    
-                    if sim > self.confidence_score:
-                        print("Words in config : {}, prob : {}".format(x, sim))
-                        tag_dict.update({item[0] : sim})
+            # encode here : ->
+            w = self.sent_emb_model.sent_embeddings(w)
+
+            # information retreival here:
+            for idx, item in enumerate(self.keyword_csv["WORDS_VECTORS"]):
+                
+                item = self._float_converter(item)
+                sim = cosine_similarity(w, item)
+                # Check the confidence score
+                if sim > self.confidence_score:
+                    print("Words in config : {}, prob : {}".format(self.keyword_csv.WORDS[idx], sim))
+                    tag_dict.update({self.keyword_csv.INTENT[idx] : sim})
 
         print("Passing criterion dictionary : {}".format(tag_dict.keys()))
         return tag_dict
 
 
 
+"""
+Scratchpad:
+
+"""

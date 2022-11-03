@@ -29,7 +29,11 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     config_file = "/Projects/configs/config.yaml"
     cfg = YamlParser(config_file)
+
+    # Load data
     data_corpus = pd.read_csv(cfg["DATA_CORPUS"]["data_csv"])
+    keyword_csv = pd.read_csv(cfg["DATA_CORPUS"]["keyword_csv"])
+    print("Prepare data corpus")
 
     # Load sentence embedded model
     print("Prepare transformers sentence embedding model . . .")
@@ -67,7 +71,7 @@ if __name__ == "__main__":
     config_dict = cfg["KEYWORD_INTENT"]
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie, keyword_csv)
 
     while True:
         try:

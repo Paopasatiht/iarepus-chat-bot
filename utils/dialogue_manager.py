@@ -15,13 +15,13 @@ from utils.helper import _float_converter
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, wv_model, sent_emb_model, intent_model, tf_vec, config_dict, custom_dictionary_trie):
+    def __init__(self,data_corpus, wv_model, sent_emb_model, intent_model, tf_vec, config_dict, custom_dictionary_trie, keyword_csv):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
         # self.model = answer_model
         self.sent_embedding = SentEmbModel(sent_emb_model)
-        self.intent_tagging = IntentsClassification(wv_model, self.sent_embedding, intent_model, tf_vec, config_dict, custom_dictionary_trie)
+        self.intent_tagging = IntentsClassification(wv_model, self.sent_embedding, intent_model, tf_vec, config_dict, custom_dictionary_trie,keyword_csv)
         
         # Corpus declaration
         self.dataset = data_corpus
@@ -90,8 +90,9 @@ class DialogueManager():
         """ Query the matching "question" and return "answer"
         """
         clean_txt = preprocess_text(question)
+        print("Text After preprocess : {}".format(clean_txt))
         out_qavec = self.sent_embedding.sent_embeddings(clean_txt)
-        answer_dict, probability = self.semantic_search(out_qavec, clean_txt)
+        answer_dict, _ = self.semantic_search(out_qavec, clean_txt)
         
         
         if len(answer_dict) != 0:
