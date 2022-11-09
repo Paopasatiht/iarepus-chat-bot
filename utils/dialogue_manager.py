@@ -33,7 +33,7 @@ class DialogueManager():
         self.QUESTION_VECTORS = self.dataset.Keys_vector
         self.ANSWER = self.dataset.Values
         self.COSINE_THRESHOLD = 0.30
-        self.CONF_SCORE = 0.50
+        self.CONF_SCORE = 0.56
 
         # Database
         # self.db = DataStore()
@@ -64,7 +64,9 @@ class DialogueManager():
             
             for _, a_key in enumerate(answer_keys):
                 
+                
                 answer_vec = _float_converter(a_key)
+                # print(answer_vec)
                 sim = cosine_similarity(query_vec, answer_vec)
                 voting_prob = self.voting(tag_dict[t], sim)
                 print(" Tags : {} \n Check voting score : {} \n similarity score : {}".format(t,voting_prob, sim))

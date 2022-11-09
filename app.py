@@ -75,9 +75,16 @@ def index_get():
 
 @app.post("/predict")
 def predict():
-    text = request.get_json().get("message")
+    text = request.get_json().get("message") # -> Might be working here 
     msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie, keyword_csv)
     response = _get_response(text, msg_manager)
+    # if tag == 1: ambiguous --> return button --> bind to another python script --> Find the answer --> return with response
+    # if tag == "ambiguous":
+    #     if request.form.get("btn-one"):
+    #         message = "do something"
+    #     elif request.form.get("btn-two"):
+    #         message = "do something here"
+    # else:
     message =  {"answer" : response}
 
 
