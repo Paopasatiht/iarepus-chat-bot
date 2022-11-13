@@ -16,6 +16,7 @@ import torch
 import json
 import pickle
 from sklearn.feature_extraction.text import CountVectorizer
+from utils.helper import get_th_tokens
 
 # from pythainlp.word_vector import WordVector
 from gensim.models import KeyedVectors
@@ -46,7 +47,7 @@ intent_model = pickle.load(open(intent_path, 'rb'))
 print("Load intent model . . .")
 
 # Declare count vectorizer
-tf_vectorizer = CountVectorizer()
+tf_vectorizer = CountVectorizer(tokenizer=get_th_tokens, ngram_range = (1, 2))
 vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
 
 # Load sentence embedded model
@@ -75,18 +76,11 @@ def index_get():
 
 @app.post("/predict")
 def predict():
-    text = request.get_json().get("message") # -> Might be working here 
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie, keyword_csv)
+    text = request.get_json().get("message")
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie, keyword_csv, kw)
     response = _get_response(text, msg_manager)
-    # if tag == 1: ambiguous --> return button --> bind to another python script --> Find the answer --> return with response
-    # if tag == "ambiguous":
-    #     if request.form.get("btn-one"):
-    #         message = "do something"
-    #     elif request.form.get("btn-two"):
-    #         message = "do something here"
-    # else:
-    message =  {"answer" : response}
 
+    message =  {"answer" : response}
 
     return jsonify(message)
 

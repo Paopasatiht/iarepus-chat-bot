@@ -1,6 +1,6 @@
 import numpy as np
 import string
-
+from pythainlp import word_tokenize
 
 def _float_converter(str_vec : str):
     """ Convert a "string" in pandas to "float" 
@@ -15,3 +15,11 @@ def _float_converter(str_vec : str):
     _float_vector = np.fromstring(str_vec.replace('[', '').replace(']', '').replace('\n', ''), dtype=float, sep=' ')
 
     return [_float_vector] 
+
+def get_th_tokens(text):
+
+  text = text.lower()
+  text = text.replace('\n', ' ')
+  tokens = word_tokenize(text,keep_whitespace=False)
+  
+  return tokens

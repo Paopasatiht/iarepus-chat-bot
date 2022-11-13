@@ -17,6 +17,8 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 from sentence_transformers import SentenceTransformer 
 
+from utils.helper import get_th_tokens
+
 
 import pickle
 import os
@@ -49,11 +51,6 @@ def prepare_embedded_feature(dataframe : pd.DataFrame, dim_size:int = 768):
         vec = SENT_EMB_MODEL.encode([x])
         print(vec.shape)
         x_counts.append(vec)
-    # x_counts = []
-    # print("Load sentenced embedd model !")
-    # for x in dataframe.Keys:
-    #     vec = SENT_EMB_MODEL.encode([x])
-    #     x_counts.append(vec)
 
     
     x_train_counts = np.array(x_counts[:len(dataframe)])
@@ -85,7 +82,7 @@ def word_embedded(model, sentence, dim = 400, use_mean = True) -> np.array:
         
         return vec
 
-def prepare_feature(dataframe, vectors, choice = 2) :
+def prepare_feature(dataframe, vectors, choice = 1) :
     """ Create a feature feeding to ML model by,
     1 = TF-Vectors
     2 = Word embedding
@@ -130,7 +127,7 @@ def model_inititate(x_train, y_train):
     
     grid = GridSearchCV(_estimator, param_grid, refit = True, verbose = 3)
     clf = grid.fit(x_train, y_train)
-    save_model(clf, "/Projects/checkpoints/intent-model-thai/bert_embeddings_multioutput_linear_regress.pkl")
+    save_model(clf, "/Projects/checkpoints/intent-model-thai/TF_multioutput_linear_regress.pkl")
 
     return clf
 
@@ -140,14 +137,6 @@ def save_model(model,filepath : str, ):
 
     with open(filepath, 'wb') as f:
         pickle.dump(model, f)
-
-def get_th_tokens(text):
-
-  text = text.lower()
-  text = text.replace('\n', ' ')
-  tokens = word_tokenize(text,keep_whitespace=False)
-  
-  return tokens
 
 
 def model_training(dataframe : pd.DataFrame):

@@ -66,8 +66,8 @@ if __name__ == "__main__":
 
     arg = parse_args()
     # if arg.gen_keyword:
-    dataframe = pd.read_csv("/Projects/configs/keyword_intent.csv")
-    generate_kw_vector(dataframe)
+    # dataframe = pd.read_csv("/Projects/configs/keyword_intent.csv")
+    # generate_kw_vector(dataframe)
     # else:
-    # dataframe = pd.read_csv("/Projects/configs/data_corpus_v2.csv")
-    # generate_q_vector(dataframe)
+    dataframe = pd.read_csv("/Projects/configs/data_corpus_v2.csv")
+    generate_q_vector(dataframe)
