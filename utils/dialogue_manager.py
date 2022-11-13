@@ -15,13 +15,13 @@ from utils.helper import _float_converter
 
 class DialogueManager():
 
-    def __init__(self,data_corpus, wv_model, sent_emb_model, intent_model, tf_vec, config_dict, custom_dictionary_trie, keyword_csv):
+    def __init__(self,data_corpus, wv_model, sent_emb_model, intent_model, tf_vec, config_dict, custom_dictionary_trie, keyword_csv, keyword_):
         """ dataset cols -> [Intents,Keys, Keys_vector,Values]
         """
         # Model && corpus initiate
         # self.model = answer_model
         self.sent_embedding = SentEmbModel(sent_emb_model)
-        self.intent_tagging = IntentsClassification(wv_model, self.sent_embedding, intent_model, tf_vec, config_dict, custom_dictionary_trie,keyword_csv)
+        self.intent_tagging = IntentsClassification(wv_model, self.sent_embedding, intent_model, tf_vec, config_dict, custom_dictionary_trie,keyword_csv, keyword_)
         
         # Corpus declaration
         self.dataset = data_corpus
@@ -32,8 +32,8 @@ class DialogueManager():
         self.QUESTION = self.dataset.Keys
         self.QUESTION_VECTORS = self.dataset.Keys_vector
         self.ANSWER = self.dataset.Values
-        self.COSINE_THRESHOLD = 0.30
-        self.CONF_SCORE = 0.56
+        self.COSINE_THRESHOLD = 0.45
+        self.CONF_SCORE = 0.60
 
         # Database
         # self.db = DataStore()
@@ -56,7 +56,9 @@ class DialogueManager():
             tag_dict = self.intent_tagging.predict_tagging(clean_txt) # -> Dictionary with all possible intent
         else :
             tag_dict = self.intent_tagging.rule_base_tagging(clean_txt)
-        #Step 2 : Pick the key vector from each intent and measure the similarit 
+        #Step 2 : Pick the key vector from each intent and measure the similarity
+        tag_dict = self.arrange_intent(tag_dict)
+        # print(tag_dict)
         t = list(tag_dict.keys())
 
         for t in tag_dict:
@@ -66,7 +68,6 @@ class DialogueManager():
                 
                 
                 answer_vec = _float_converter(a_key)
-                # print(answer_vec)
                 sim = cosine_similarity(query_vec, answer_vec)
                 voting_prob = self.voting(tag_dict[t], sim)
                 print(" Tags : {} \n Check voting score : {} \n similarity score : {}".format(t,voting_prob, sim))
@@ -86,6 +87,27 @@ class DialogueManager():
         """
         
         return (tag_prob[0] + values_prob[0][0]) / 2
+    
+    def arrange_intent(self, _dictionary : dict):
+        """
+        Receive the dictionary of answer and arrange the index,
+        Ex : ["ขั้นตอนในการสมัคร", "ทักทาย"] -> ["ทักทาย", "ขั้นตอนในการสมัคร"]
+        
+        Reference : https://stackoverflow.com/questions/5925731/reorder-dictionary-in-python-according-to-a-list-of-values
+        """
+
+        reorder_dict = {}
+        desired_order_list = ["ทักทาย", "ขั้นตอนในการสมัคร", "ค่าใช้จ่ายในการสมัคร", "จำนวนผู้สมัคร", "เกณฑ์ในการคัดเลือก", "เอกสารในการสมัคร","เทียบโอนหน่วยกิต",
+                            "ภาพรวมโครงการ", "รูปแบบโครงการ", "หลักสูตรการเรียน", "หลักสูตรเอไอระดับพื้นฐาน", "หลักสูตรเอไอระดับกลาง", "หลักสูตรเอไอขั้นสูง", "เงินสนับสนุน", "Hackathon", "แนวข้อสอบ"
+                            ,"พักงาน", "รหัสประจำตัว", "ใบประกาศ",
+                            "ติดต่อผู้ดูแล"]
+        for k in desired_order_list:
+            try:
+                reorder_dict.update({k : _dictionary[k]})
+            except:
+                pass
+
+        return reorder_dict
 
 
     def generate_answer(self, question, debug=False):
@@ -111,10 +133,6 @@ class DialogueManager():
             answer = "ขอโทษนะค้าาา T^T น้อง Aeye ไม่ค่อยเข้าใจความหมายเลยค่ะ ท่านสามารถตรวจสอบเพิ่มเติมได้ที่ https://superai.aiat.or.th/ ได้เลยนะคะ"
             # if ~debug:
             #         self.db.push_to_database("unknown", question, answer, 0, str(out_qavec), status="fail")
-          
-            _f = open("logs/uncertainly_q.txt", "a")
-            _f.write(question + "\n")
-            _f.close()
         
         return answer
         

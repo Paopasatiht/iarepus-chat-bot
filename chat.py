@@ -65,13 +65,13 @@ if __name__ == "__main__":
     vectors = tf_vectorizer.fit_transform(data_corpus.Keys)
 
     # tags declaration
-    # kw = list(cfg["KEYWORD_INTENT"].keys())
+    kw = list(cfg["KEYWORD_INTENT"].keys())
 
     # Declared a dictionary from config.yaml files
     config_dict = cfg["KEYWORD_INTENT"]
 
     print("Let's chat! (type 'quit' to exit)")
-    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie, keyword_csv)
+    msg_manager = DialogueManager(data_corpus, wv_model, answer_model, intent_model, tf_vectorizer, config_dict, custom_dictionary_trie, keyword_csv, kw)
 
     while True:
         try:

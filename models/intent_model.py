@@ -8,24 +8,24 @@ from sklearn.metrics.pairwise import cosine_similarity
 from utils.preprocess import generate_n_gram
 from pythainlp.tag import pos_tag
 
-config_file = "/Projects/configs/config.yaml"
-cfg = YamlParser(config_file)
-kw = cfg["KEYWORD_INTENT"]
-custom_keyword = cfg["CUSTOM_DICT"]['words']
-
+cfg = YamlParser("/Projects/configs/config.yaml")
+custom_keyword = cfg["CUSTOM_DICT"]["words"]
 
 class IntentsClassification():
 
-    def __init__(self, word_vector_model, sent_embedded_model , intent_model, count_vec, config_dict, custom_dict, keyword_csv):
+    def __init__(self, word_vector_model, sent_embedded_model , intent_model, count_vec, config_dict, custom_dict, keyword_csv, keyword_):
 
+        # Load model
         self.intent_model = intent_model
         self.sent_emb_model = sent_embedded_model
-        self.count_vec = count_vec
         self.wv_model = word_vector_model
+        # Load Vectorizer & CUstom dictionary
+        self.count_vec = count_vec
         self.config_dict = config_dict
         self.tags = list(config_dict.keys())
         self.custom_dict = custom_dict
         self.keyword_csv = keyword_csv
+        self.keyword_ = keyword_
 
         self.confidence_score = 0.65
         self.weights_standout = 0.60
@@ -73,8 +73,8 @@ class IntentsClassification():
         ind = []
         
         for w in gram_sentence.split(' '):
-            for idx, _intent in enumerate(kw):
-                if w in kw[_intent] :
+            for idx, _intent in enumerate(self.keyword_):
+                if w in self.keyword_[_intent] :
                     print("Word : {}, In config True !".format(w))
                     (predicted[idx])[0][1] = ((predicted[idx])[0][1] + self.weights_standout)/2
                     break
@@ -87,7 +87,7 @@ class IntentsClassification():
                 pred.append(yes_score)
         return pred, ind
 
-    def predict_tagging(self, clean_text : str, choice = 2):
+    def predict_tagging(self, clean_text : str, choice = 1):
 
         all_n_gram_phase = generate_n_gram(clean_text)
         print("Check all n gram phase : {}".format(all_n_gram_phase))
@@ -124,7 +124,6 @@ class IntentsClassification():
         words = []
         tokens = [token for token in word_tokenize(sentence, custom_dict=self.custom_dict, keep_whitespace=False) if token != ""]
 
-        # print(custom_keyword)
         for _word in tokens:
             if _word in custom_keyword:
                 words.append(_word)
@@ -147,7 +146,6 @@ class IntentsClassification():
 
             # information retreival here:
             for idx, item in enumerate(self.keyword_csv["WORDS_VECTORS"]):
-                
                 item = self._float_converter(item)
                 sim = cosine_similarity(w, item)
                 # Check the confidence score
@@ -157,10 +155,3 @@ class IntentsClassification():
 
         print("Passing criterion dictionary : {}".format(tag_dict.keys()))
         return tag_dict
-
-
-
-"""
-Scratchpad:
-
-"""
