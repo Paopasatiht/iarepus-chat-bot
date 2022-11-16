@@ -98,8 +98,8 @@ class DialogueManager():
 
         reorder_dict = {}
         desired_order_list = ["ทักทาย", "ขั้นตอนในการสมัคร", "ค่าใช้จ่ายในการสมัคร", "จำนวนผู้สมัคร", "เกณฑ์ในการคัดเลือก", "เอกสารในการสมัคร","เทียบโอนหน่วยกิต",
-                            "ภาพรวมโครงการ", "รูปแบบโครงการ", "หลักสูตรการเรียน", "หลักสูตรเอไอระดับพื้นฐาน", "หลักสูตรเอไอระดับกลาง", "หลักสูตรเอไอขั้นสูง", "เงินสนับสนุน", "Hackathon", "แนวข้อสอบ"
-                            ,"พักงาน", "รหัสประจำตัว", "ใบประกาศ",
+                            "ภาพรวมโครงการ", "รูปแบบโครงการ","เริ่มเรียน", "หลักสูตรการเรียน","ช่องทางการเรียน", "หลักสูตรเอไอระดับพื้นฐาน", "หลักสูตรเอไอระดับกลาง", "หลักสูตรเอไอขั้นสูง", "เงินสนับสนุน", "Hackathon", "แนวข้อสอบ"
+                            ,"พักงาน", "ระยะเวลาของรหัส", "ใบประกาศ", "หาเมลล์ไม่เจอ",
                             "ติดต่อผู้ดูแล"]
         for k in desired_order_list:
             try:
@@ -114,7 +114,6 @@ class DialogueManager():
         """ Query the matching "question" and return "answer"
         """
         clean_txt = preprocess_text(question)
-        print("Text After preprocess : {}".format(clean_txt))
         out_qavec = self.sent_embedding.sent_embeddings(clean_txt)
         answer_dict, _ = self.semantic_search(out_qavec, clean_txt)
         
